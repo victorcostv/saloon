@@ -1,0 +1,542 @@
+:root {
+    /* Colors - Cartoon Wood Theme */
+    --bg-dark: #87CEEB;
+    /* Sky blue fallback */
+    --bg-card: #e59f5c;
+    /* Light wood */
+    --text-primary: #3d1c04;
+    /* Dark brown text */
+    --text-muted: #7c4420;
+
+    /* Law / Outlaw distinct colors for roles */
+    --law-color: #2563eb;
+    /* bright blue */
+    --outlaw-color: #dc2626;
+    /* bright red */
+
+    /* Accents */
+    --accent-yellow: #facc15;
+    --border-color: #512503;
+    /* Dark wood outline */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Garante que a splash ocupa 100% sem overflow */
+html,
+body {
+    overflow: hidden;
+}
+
+body {
+    background-color: #c87528;
+    /* fallback warm desert */
+    color: var(--text-primary);
+    font-family: 'Fredoka', 'Nunito', sans-serif;
+    font-weight: 700;
+    line-height: 1.6;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    /* fundo do deserto 16:9 cobrindo toda a tela */
+    background-image: url('bg.png');
+    background-size: cover;
+    background-position: center center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    pointer-events: none;
+    transition: background-color 1s ease;
+}
+
+body.bg-winner-law::before {
+    background-color: rgba(37, 99, 235, 0.4);
+}
+
+body.bg-winner-outlaw::before {
+    background-color: rgba(220, 38, 38, 0.4);
+}
+
+h1,
+h2,
+h3,
+.logo-text {
+    font-family: 'Fredoka', cursive;
+    letter-spacing: 1px;
+    color: #ffffff;
+    -webkit-text-stroke: 4px #881337;
+    text-shadow: 0 4px 0 #881337;
+    margin-bottom: 20px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#app-container {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    height: 100vh;
+    width: min(100vw, calc(100vh * 9 / 16));
+    padding: 20px;
+    overflow: hidden;
+}
+
+.screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+    animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.screen::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+}
+
+.screen.active {
+    display: flex;
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Colored Texts */
+.neon-text {
+    color: #ffffff;
+    -webkit-text-stroke: 2px #881337;
+    text-shadow: 0 3px 0 #881337;
+}
+
+.neon-text.yellow {
+    color: #ffde59;
+}
+
+.error-msg {
+    color: #881337;
+    font-size: 1.1rem;
+    margin-top: 10px;
+    min-height: 20px;
+    font-weight: 800;
+}
+
+/* Forms & Inputs */
+input[type="text"] {
+    width: 100%;
+    padding: 15px 25px;
+    background: #fff;
+    border: 6px solid #881337;
+    border-radius: 40px;
+    color: #881337;
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-family: 'Fredoka', sans-serif;
+    outline: none;
+    box-shadow: 0 6px 0px rgba(136, 19, 55, 0.2);
+    text-align: center;
+}
+
+input[type="text"]::placeholder {
+    color: rgba(136, 19, 55, 0.4);
+}
+
+/* Cartoon Buttons */
+.btn {
+    padding: 15px 30px;
+    border: 6px solid #881337;
+    border-radius: 40px;
+    font-family: 'Fredoka', cursive;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    text-align: center;
+    width: auto;
+    color: #881337;
+    background: #ffffff;
+    box-shadow: 0 8px 0px #881337;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn:active {
+    transform: translateY(6px);
+    box-shadow: 0 2px 0px #881337 !important;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    filter: grayscale(1);
+    pointer-events: none;
+    box-shadow: 0 4px 0px #881337 !important;
+}
+
+.btn.lg {
+    width: 100%;
+    padding: 20px;
+    font-size: 1.8rem;
+}
+
+.mt-4 {
+    margin-top: 20px;
+}
+
+.mt-2 {
+    margin-top: 10px;
+}
+
+/* Especial Buttons */
+.btn-primary,
+.btn-neon-blue,
+.btn-neon-red {
+    background: #ffffff;
+    color: #881337;
+}
+
+/* Cards & Containers */
+.card,
+.role-card,
+.setup-extras,
+.board-status {
+    background: #ffffff;
+    border: 6px solid #881337;
+    border-radius: 30px;
+    padding: 20px;
+    box-shadow: 0 10px 0px rgba(136, 19, 55, 0.1);
+    color: #881337;
+    margin-bottom: 20px;
+}
+
+/* Component Lists */
+.list-group {
+    list-style: none;
+    margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.list-group li {
+    padding: 12px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 2.2rem;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    color: #881337;
+    background: #ffffff;
+    border-radius: 40px;
+    border: 6px solid #881337;
+    box-shadow: 0 6px 0px rgba(136, 19, 55, 0.1);
+}
+
+.list-group li button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+}
+
+.list-group li button {
+    background: none;
+    border: none;
+    color: #dc2626;
+    cursor: pointer;
+    font-size: 2rem;
+    transition: transform 0.2s;
+}
+
+.list-group li button:hover {
+    transform: scale(1.2);
+}
+
+/* Selectable List (for Team Selection) */
+.selectable-list {
+    margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.selectable-item {
+    padding: 15px;
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+/* Selectable List (for Team Selection) */
+.selectable-list {
+    margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.selectable-item {
+    padding: 15px;
+    font-size: 1.5rem;
+    text-align: center;
+    background: #ffffff;
+    border: 4px solid #881337;
+    border-radius: 20px;
+    color: #881337;
+}
+
+.selectable-item.selected {
+    background: #ffde59;
+    transform: scale(1.03);
+    box-shadow: 0 6px 0px #881337;
+}
+
+/* Board UI */
+.mission-track {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    padding: 0 10px;
+}
+
+.mission-bubble {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    border: 5px solid #881337;
+    color: #881337;
+    box-shadow: 0 5px 0px rgba(136, 19, 55, 0.2);
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.mission-bubble.current {
+    transform: scale(1.2);
+    border-color: #ffde59;
+    box-shadow: 0 0 15px #ffde59;
+}
+
+.mission-bubble.success {
+    background: #2563eb;
+    color: white;
+    border-color: #881337;
+}
+
+.mission-bubble.fail {
+    background: #dc2626;
+    color: white;
+    border-color: #881337;
+}
+
+.reject-dots {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.reject-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 4px solid #881337;
+}
+
+.reject-dot.filled {
+    background: #dc2626;
+}
+
+/* Role Card Setup */
+.role-card {
+    padding: 30px 20px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.spies-list {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 4px dashed #881337;
+    text-align: left;
+}
+
+#spies-ul {
+    list-style: none;
+    padding-left: 0;
+    color: #881337;
+    font-size: 1.3rem;
+    font-weight: 800;
+}
+
+/* Online Profile Avatar Grid */
+.avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.avatar-item {
+    width: 85px;
+    height: 85px;
+    border-radius: 50%;
+    background: white;
+    border: 5px solid #881337;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3.2rem;
+    cursor: pointer;
+    box-shadow: 0 6px 0px #881337;
+    transition: transform 0.1s;
+}
+
+.avatar-item.selected {
+    background: #ffde59;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px #ffde59, 0 6px 0px #881337;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Advanced Rules Cards */
+.mode-card {
+    background: #ffffff;
+    border: 6px solid #881337;
+    border-radius: 40px;
+    padding: 15px 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.1s;
+    box-shadow: 0 8px 0px rgba(136, 19, 55, 0.1);
+}
+
+.mode-card:active {
+    transform: translateY(4px);
+    box-shadow: 0 4px 0px rgba(136, 19, 55, 0.1);
+}
+
+.card-icon-container {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.rule-icon {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.card-content {
+    flex: 1;
+}
+
+.rule-title {
+    font-size: 1.4rem;
+    font-weight: 900;
+    line-height: 1.1;
+    color: #881337;
+}
+
+.card-check-container {
+    margin-right: 10px;
+}
+
+.custom-checkbox {
+    width: 35px;
+    height: 35px;
+    border: 6px solid #881337;
+    border-radius: 10px;
+    display: block;
+    background: white;
+    position: relative;
+}
+
+.hidden-check {
+    display: none;
+}
+
+.hidden-check:checked+.custom-checkbox {
+    background: #881337;
+}
+
+.hidden-check:checked+.custom-checkbox::after {
+    content: '✓';
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.8rem;
+    font-weight: 900;
+}
+
+.info-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    width: 25px;
+    height: 25px;
+    background: #881337;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-style: italic;
+    font-weight: 900;
+}
