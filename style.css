@@ -1,23 +1,15 @@
+/* ============================================
+   VARIÁVEIS E RESET
+   ============================================ */
 :root {
-    /* Colors - Cartoon Wood Theme */
     --bg-dark: #87CEEB;
-    /* Sky blue fallback */
     --bg-card: #e59f5c;
-    /* Light wood */
     --text-primary: #3d1c04;
-    /* Dark brown text */
     --text-muted: #7c4420;
-
-    /* Law / Outlaw distinct colors for roles */
     --law-color: #2563eb;
-    /* bright blue */
     --outlaw-color: #dc2626;
-    /* bright red */
-
-    /* Accents */
     --accent-yellow: #facc15;
     --border-color: #512503;
-    /* Dark wood outline */
 }
 
 * {
@@ -26,24 +18,23 @@
     padding: 0;
 }
 
-/* Garante que a splash ocupa 100% sem overflow */
-html,
-body {
+/* ============================================
+   BASE - BODY E HTML
+   ============================================ */
+html, body {
     overflow: hidden;
 }
 
 body {
     background-color: #c87528;
-    /* fallback warm desert */
     color: var(--text-primary);
-    font-family: 'Fredoka', 'Nunito', sans-serif;
+    font-family: 'Bebas Neue', 'Nunito', sans-serif;
     font-weight: 700;
     line-height: 1.6;
     overflow: hidden;
     width: 100vw;
     height: 100vh;
-    /* fundo do deserto 16:9 cobrindo toda a tela */
-    background-image: url('bg.png');
+    background-image: url('images/bg.png');
     background-size: cover;
     background-position: center center;
     display: flex;
@@ -51,13 +42,11 @@ body {
     align-items: center;
 }
 
+/* Overlay de fundo colorido (vitória/derrota) */
 body::before {
     content: '';
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     z-index: -1;
     pointer-events: none;
     transition: background-color 1s ease;
@@ -71,22 +60,86 @@ body.bg-winner-outlaw::before {
     background-color: rgba(220, 38, 38, 0.4);
 }
 
-h1,
-h2,
-h3,
-.logo-text {
-    font-family: 'Fredoka', cursive;
+/* ============================================
+   MENU LATERAL
+   ============================================ */
+
+#side-menu-panel.open {
+    right: 0 !important;
+}
+
+#side-menu-panel button:active {
+    transform: translateY(3px);
+    box-shadow: none !important;
+}
+
+/* ============================================
+   TIPOGRAFIA - TÍTULOS E TEXTOS
+   ============================================ */
+h1, h2, h3, .logo-text {
+    font-family: 'Bebas Neue', cursive;
     letter-spacing: 1px;
     color: #ffffff;
-    -webkit-text-stroke: 4px #881337;
-    text-shadow: 0 4px 0 #881337;
+    text-shadow:
+        -3px -3px 0 #881337,
+         3px -3px 0 #881337,
+        -3px  3px 0 #881337,
+         3px  3px 0 #881337,
+         0    4px 0 #881337;
     margin-bottom: 20px;
 }
 
-.hidden {
-    display: none !important;
+.neon-text {
+    color: #ffffff;
+    text-shadow:
+        -2px -2px 0 #881337,
+         2px -2px 0 #881337,
+        -2px  2px 0 #881337,
+         2px  2px 0 #881337,
+         0    3px 0 #881337;
 }
 
+.neon-text.yellow { color: #ffde59; }
+.neon-text.blue   { color: #60a5fa; }
+.neon-text.red    { color: #dc2626; }
+
+.titulo-tela {
+    color: #ffde59;
+    text-shadow:
+        -1.5px -1.5px 0 var(--border-color),
+         1.5px -1.5px 0 var(--border-color),
+        -1.5px  1.5px 0 var(--border-color),
+         1.5px  1.5px 0 var(--border-color),
+         0      3px   0 var(--border-color);
+    text-align: center;
+    font-size: 1.3rem;
+    line-height: 1.2;
+    margin-bottom: 12px;
+}
+
+.titulo-branco {
+    color: #ffffff;
+    text-shadow:
+        -1.5px -1.5px 0 var(--border-color),
+         1.5px -1.5px 0 var(--border-color),
+        -1.5px  1.5px 0 var(--border-color),
+         1.5px  1.5px 0 var(--border-color),
+         0      3px   0 var(--border-color);
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.error-msg {
+    color: #881337;
+    font-size: 1.1rem;
+    margin-top: 10px;
+    min-height: 20px;
+    font-weight: 800;
+}
+
+/* ============================================
+   LAYOUT - CONTAINER E TELAS
+   ============================================ */
 #app-container {
     display: flex;
     flex-direction: column;
@@ -117,38 +170,17 @@ h3,
     display: flex;
 }
 
-@keyframes bounceIn {
-    0% {
-        opacity: 0;
-        transform: scale(0.9) translateY(20px);
-    }
+/* ============================================
+   UTILITÁRIOS
+   ============================================ */
+.hidden { display: none !important; }
+.mt-4   { margin-top: 20px; }
+.mt-2   { margin-top: 10px; }
+.text-center { text-align: center; }
 
-    100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-/* Colored Texts */
-.neon-text {
-    color: #ffffff;
-    -webkit-text-stroke: 2px #881337;
-    text-shadow: 0 3px 0 #881337;
-}
-
-.neon-text.yellow {
-    color: #ffde59;
-}
-
-.error-msg {
-    color: #881337;
-    font-size: 1.1rem;
-    margin-top: 10px;
-    min-height: 20px;
-    font-weight: 800;
-}
-
-/* Forms & Inputs */
+/* ============================================
+   FORMULÁRIOS E INPUTS
+   ============================================ */
 input[type="text"] {
     width: 100%;
     padding: 15px 25px;
@@ -158,7 +190,7 @@ input[type="text"] {
     color: #881337;
     font-size: 1.8rem;
     font-weight: 700;
-    font-family: 'Fredoka', sans-serif;
+    font-family: 'Bebas Neue', sans-serif;
     outline: none;
     box-shadow: 0 6px 0px rgba(136, 19, 55, 0.2);
     text-align: center;
@@ -168,12 +200,14 @@ input[type="text"]::placeholder {
     color: rgba(136, 19, 55, 0.4);
 }
 
-/* Cartoon Buttons */
+/* ============================================
+   BOTÕES
+   ============================================ */
 .btn {
     padding: 15px 30px;
     border: 6px solid #881337;
     border-radius: 40px;
-    font-family: 'Fredoka', cursive;
+    font-family: 'Bebas Neue', cursive;
     font-size: 1.8rem;
     font-weight: 700;
     letter-spacing: 1px;
@@ -207,15 +241,6 @@ input[type="text"]::placeholder {
     font-size: 1.8rem;
 }
 
-.mt-4 {
-    margin-top: 20px;
-}
-
-.mt-2 {
-    margin-top: 10px;
-}
-
-/* Especial Buttons */
 .btn-primary,
 .btn-neon-blue,
 .btn-neon-red {
@@ -223,7 +248,9 @@ input[type="text"]::placeholder {
     color: #881337;
 }
 
-/* Cards & Containers */
+/* ============================================
+   CARDS E CONTAINERS
+   ============================================ */
 .card,
 .role-card,
 .setup-extras,
@@ -237,7 +264,19 @@ input[type="text"]::placeholder {
     margin-bottom: 20px;
 }
 
-/* Component Lists */
+.board-status {
+    margin-top: 60px;
+}
+
+.role-card {
+    padding: 30px 20px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+/* ============================================
+   LISTAS
+   ============================================ */
 .list-group {
     list-style: none;
     margin: 20px 0;
@@ -252,7 +291,7 @@ input[type="text"]::placeholder {
     justify-content: space-between;
     align-items: center;
     font-size: 2.2rem;
-    font-family: 'Fredoka', sans-serif;
+    font-family: 'Bebas Neue', sans-serif;
     font-weight: 700;
     color: #881337;
     background: #ffffff;
@@ -264,18 +303,11 @@ input[type="text"]::placeholder {
 .list-group li button {
     background: none;
     border: none;
+    color: #dc2626;
     cursor: pointer;
     font-size: 2rem;
     display: flex;
     align-items: center;
-}
-
-.list-group li button {
-    background: none;
-    border: none;
-    color: #dc2626;
-    cursor: pointer;
-    font-size: 2rem;
     transition: transform 0.2s;
 }
 
@@ -283,21 +315,6 @@ input[type="text"]::placeholder {
     transform: scale(1.2);
 }
 
-/* Selectable List (for Team Selection) */
-.selectable-list {
-    margin: 20px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.selectable-item {
-    padding: 15px;
-    font-size: 1.3rem;
-    text-align: center;
-}
-
-/* Selectable List (for Team Selection) */
 .selectable-list {
     margin: 20px 0;
     display: flex;
@@ -313,6 +330,12 @@ input[type="text"]::placeholder {
     border: 4px solid #881337;
     border-radius: 20px;
     color: #881337;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.15s;
+}
+
+.selectable-item:active {
+    transform: scale(0.97);
 }
 
 .selectable-item.selected {
@@ -321,17 +344,22 @@ input[type="text"]::placeholder {
     box-shadow: 0 6px 0px #881337;
 }
 
-/* Board UI */
+/* ============================================
+   TABULEIRO - MISSÕES E REJEIÇÕES
+   ============================================ */
 .mission-track {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
     margin-bottom: 30px;
     padding: 0 10px;
 }
 
 .mission-bubble {
-    width: 55px;
-    height: 55px;
+    width: 45px;
+    height: 45px;
+    flex-shrink: 0;
     border-radius: 50%;
     background: #ffffff;
     display: flex;
@@ -382,13 +410,9 @@ input[type="text"]::placeholder {
     background: #dc2626;
 }
 
-/* Role Card Setup */
-.role-card {
-    padding: 30px 20px;
-    text-align: center;
-    margin: 20px 0;
-}
-
+/* ============================================
+   CARTAS DE PERSONAGEM
+   ============================================ */
 .spies-list {
     margin-top: 20px;
     padding-top: 15px;
@@ -404,49 +428,9 @@ input[type="text"]::placeholder {
     font-weight: 800;
 }
 
-/* Online Profile Avatar Grid */
-.avatar-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-}
-
-.avatar-item {
-    width: 85px;
-    height: 85px;
-    border-radius: 50%;
-    background: white;
-    border: 5px solid #881337;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 3.2rem;
-    cursor: pointer;
-    box-shadow: 0 6px 0px #881337;
-    transition: transform 0.1s;
-}
-
-.avatar-item.selected {
-    background: #ffde59;
-    transform: scale(1.1);
-    box-shadow: 0 0 20px #ffde59, 0 6px 0px #881337;
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.05);
-    }
-
-    100% {
-        transform: scale(1);
-    }
-}
-
-/* Advanced Rules Cards */
+/* ============================================
+   CARDS DE REGRAS AVANÇADAS
+   ============================================ */
 .mode-card {
     background: #ffffff;
     border: 6px solid #881337;
@@ -467,8 +451,8 @@ input[type="text"]::placeholder {
 }
 
 .card-icon-container {
-    width: 80px;
-    height: 80px;
+    width: 60px;
+    height: 60px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -482,10 +466,12 @@ input[type="text"]::placeholder {
 
 .card-content {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .rule-title {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
     font-weight: 900;
     line-height: 1.1;
     color: #881337;
@@ -509,11 +495,11 @@ input[type="text"]::placeholder {
     display: none;
 }
 
-.hidden-check:checked+.custom-checkbox {
+.hidden-check:checked + .custom-checkbox {
     background: #881337;
 }
 
-.hidden-check:checked+.custom-checkbox::after {
+.hidden-check:checked + .custom-checkbox::after {
     content: '✓';
     color: white;
     position: absolute;
@@ -539,4 +525,90 @@ input[type="text"]::placeholder {
     font-size: 1rem;
     font-style: italic;
     font-weight: 900;
+    z-index: 2;
+}
+
+.checked-visual {
+    background: #881337 !important;
+}
+
+.checked-visual::after {
+    content: '✓';
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.8rem;
+    font-weight: 900;
+}
+
+/* ============================================
+   AVATAR E PERFIL ONLINE
+   ============================================ */
+.avatar-carousel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.avatar-display {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 4px solid #881337;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+}
+
+.arrow-btn {
+    background: #881337;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    transition: transform 0.1s;
+}
+
+.arrow-btn:active {
+    transform: scale(0.92);
+}
+
+/* ============================================
+   ANIMAÇÕES
+   ============================================ */
+@keyframes bounceIn {
+    0%   { opacity: 0; transform: scale(0.9) translateY(20px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes pulse {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes warningPulse {
+    0%   { transform: scale(1);    color: white; }
+    25%  { transform: scale(1.15); color: #dc2626; }
+    50%  { transform: scale(1.05); color: #ff0000; }
+    75%  { transform: scale(1.15); color: #dc2626; }
+    100% { transform: scale(1);    color: white; }
+}
+
+.warning-pulse {
+    animation: warningPulse 0.8s ease-in-out;
+    display: block;
+    text-align: center;
 }
