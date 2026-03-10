@@ -1,7 +1,7 @@
 {
     "name": "Saloon",
     "short_name": "Saloon",
-    "start_url": "/",
+    "start_url": "/saloon/",
     "display": "standalone",
     "background_color": "#c87528",
     "theme_color": "#c87528",
