@@ -618,11 +618,24 @@ input[type="text"]::placeholder { color: rgba(136, 19, 55, 0.45); }
 }
 .face-extra.revolver-line img { width: 28px; height: 28px; object-fit: contain; }
 
+/* Bloco de ações com altura reservada: o botão visível troca sem empurrar
+   a carta (os dois ocupam a MESMA célula do grid; o escondido fica invisível). */
 .reveal-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: grid;
+    grid-template-areas: "action";
     padding-bottom: 6px;
+    min-height: 74px;
+    align-items: center;
+}
+.reveal-actions > .btn {
+    grid-area: action;
+    width: 100%;
+}
+/* Esconder sem tirar do fluxo (não muda o layout, não faz a carta pular) */
+.reveal-actions > .btn.hidden {
+    display: flex !important;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .ready-chip {
