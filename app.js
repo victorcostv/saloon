@@ -1570,8 +1570,9 @@ function showOnlineBoard(code) {
 
             players.forEach(p => {
                 const div = document.createElement('div');
-                div.className = 'selectable-item';
-                div.innerText = p.name;
+                div.className = 'selectable-item has-avatar';
+                const av = p.avatar || 'avatars/avatar1.png';
+                div.innerHTML = `<div class="avatar-wrap"><img src="${av}" alt=""><div class="check-badge">✓</div></div><span class="player-name">${p.name}</span>`;
                 div.onclick = () => {
                     const pos = selectedTeam.indexOf(p.name);
                     if (pos >= 0) {
@@ -2165,15 +2166,19 @@ function showOnlineGameOver(code, room, winner, reason) {
     outUl.innerHTML = '';
 
     players.forEach(p => {
-        let title = p.name;
-        if (p.isBoss)         title += ' ' + t('tag_boss');
-        if (p.isDelegado)     title += ' ' + t('tag_delegado');
-        if (p.isEscrivao)     title += ' ' + t('tag_escrivao');
-        if (p.isFalsificador) title += ' ' + t('tag_falsificador');
+        let suitKey = p.role;
+        let tag = '';
+        if (p.isBoss)              { suitKey = 'BOSS';         tag = t('tag_boss'); }
+        else if (p.isDelegado)     { suitKey = 'DELEGADO';     tag = t('tag_delegado'); }
+        else if (p.isEscrivao)     { suitKey = 'ESCRIVAO';     tag = t('tag_escrivao'); }
+        else if (p.isFalsificador) { suitKey = 'FALSIFICADOR'; tag = t('tag_falsificador'); }
+        const av = p.avatar || 'avatars/avatar1.png';
+        const suit = (typeof suitSVG === 'function') ? suitSVG(suitKey) : '';
+        const tagHtml = tag ? `<span class="reveal-tag">${tag.trim()}</span>` : '';
         if (p.role === 'LAW') {
-            lawUl.innerHTML += `<li><span>${title}</span></li>`;
+            lawUl.innerHTML += `<li class="reveal-li law"><div class="avatar-wrap"><img src="${av}" alt=""></div><span class="reveal-name">${p.name}</span>${tagHtml}<span class="reveal-suit">${suit}</span></li>`;
         } else {
-            outUl.innerHTML += `<li><span>${title}</span> <span class="neon-text red" style="font-size:0.95rem;">${t('traitor')}</span></li>`;
+            outUl.innerHTML += `<li class="reveal-li outlaw"><div class="avatar-wrap"><img src="${av}" alt=""></div><span class="reveal-name">${p.name}</span>${tagHtml}<span class="reveal-suit">${suit}</span></li>`;
         }
     });
 

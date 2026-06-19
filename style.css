@@ -1445,3 +1445,75 @@ body.suspense-dim::after {
     margin-top: 2px;
     line-height: 1.2;
 }
+
+/* ═══ Avatares na seleção de equipe (online) ═══ */
+.selectable-item.has-avatar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+}
+.selectable-item.has-avatar .avatar-wrap {
+    position: relative;
+    width: 52px; height: 52px;
+    flex-shrink: 0;
+}
+.selectable-item.has-avatar .avatar-wrap img {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--vinho);
+}
+.selectable-item.has-avatar.selected .avatar-wrap img { border-color: var(--law); }
+.selectable-item.has-avatar .avatar-wrap .check-badge {
+    position: absolute; bottom: -3px; right: -3px;
+    width: 22px; height: 22px;
+    background: var(--law); color: #fff;
+    border: 2px solid #fff; border-radius: 50%;
+    display: none; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 0.85rem;
+}
+.selectable-item.has-avatar.selected .avatar-wrap .check-badge { display: flex; }
+.selectable-item.has-avatar .player-name {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+}
+.selectable-item.has-avatar.selected .player-name { color: var(--law); }
+
+/* ═══ Avatares no resultado final (online) ═══ */
+.reveal-li {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+}
+.reveal-li .avatar-wrap { width: 44px; height: 44px; flex-shrink: 0; }
+.reveal-li .avatar-wrap img {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--vinho);
+}
+.reveal-li.law .avatar-wrap img { border-color: var(--law); }
+.reveal-li.outlaw .avatar-wrap img { border-color: var(--outlaw); }
+.reveal-li .reveal-name {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+}
+.reveal-li .reveal-tag {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    color: var(--vinho);
+    margin-left: 2px;
+}
+.reveal-li .reveal-suit {
+    width: 30px; height: 30px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+.reveal-li .reveal-suit svg { width: 100%; height: 100%; display: block; }
