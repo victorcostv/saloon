@@ -34,6 +34,8 @@ const state = {
     delegadoTargetIndex: -1,
     bossIndex: -1,
     delegadoIndex: -1,
+    escrivaoIndex: -1,
+    falsificadorIndex: -1,
 
     currentMissionIndex: 0,
     rejectedTeams: 0,
@@ -420,7 +422,7 @@ function cleanupRoomEntirely(code) {
 }
 
 function resetOfflineState() {
-    state.players.forEach(p => { p.role = null; p.isBoss = false; p.isDelegado = false; });
+    state.players.forEach(p => { p.role = null; p.isBoss = false; p.isDelegado = false; p.isEscrivao = false; p.isFalsificador = false; });
     state.currentMissionIndex = 0;
     state.rejectedTeams = 0;
     state.missionResults = [null, null, null, null, null];
@@ -487,13 +489,17 @@ function initializeGame() {
     state.config = GAME_CONFIG[pCount];
     state.extras.roles    = document.getElementById('chk-roles').checked;
     state.extras.revolver = document.getElementById('chk-revolver').checked;
+    state.extras.farsante = document.getElementById('chk-farsante').checked && state.extras.roles;
     state.currentSheriffIndex = Math.floor(Math.random() * pCount);
 
     let roles = [];
     for (let i = 0; i < state.config.outlaws; i++) roles.push('OUTLAW');
     for (let i = 0; i < pCount - state.config.outlaws; i++) roles.push('LAW');
     roles = shuffle(roles);
-    state.players.forEach((p, i) => { p.role = roles[i]; p.isBoss = false; p.isDelegado = false; });
+    state.players.forEach((p, i) => {
+        p.role = roles[i]; p.isBoss = false; p.isDelegado = false;
+        p.isEscrivao = false; p.isFalsificador = false;
+    });
 
     if (state.extras.roles) {
         let outlawsIdx = state.players.map((p, i) => p.role === 'OUTLAW' ? i : -1).filter(i => i !== -1);
@@ -504,6 +510,31 @@ function initializeGame() {
         state.players[state.delegadoIndex].isDelegado = true;
         let commonOutlaws = outlawsIdx.filter(i => i !== state.bossIndex);
         state.delegadoTargetIndex = commonOutlaws[Math.floor(Math.random() * commonOutlaws.length)];
+
+        if (state.extras.farsante) {
+            // Falsificador: um fora-da-lei comum (nunca o Chefe).
+            let falsCandidates = commonOutlaws;
+            state.falsificadorIndex = falsCandidates[Math.floor(Math.random() * falsCandidates.length)];
+            state.players[state.falsificadorIndex].isFalsificador = true;
+            // Escrivão: um membro da Lei comum (nunca o Delegado).
+            let escrCandidates = lawIdx.filter(i => i !== state.delegadoIndex);
+            state.escrivaoIndex = escrCandidates[Math.floor(Math.random() * escrCandidates.length)];
+            state.players[state.escrivaoIndex].isEscrivao = true;
+            // O Delegado NÃO vê o Falsificador. Reescolhe o alvo visível entre
+            // os comuns que não sejam o Falsificador (e já não é o Chefe).
+            let visiveis = commonOutlaws.filter(i => i !== state.falsificadorIndex);
+            if (visiveis.length > 0) {
+                state.delegadoTargetIndex = visiveis[Math.floor(Math.random() * visiveis.length)];
+            }
+            // Se não houver outro comum visível, o Delegado vê o Chefe (com Farsante
+            // ele PODE ver o Chefe). Garante que sempre haja um nome.
+            else {
+                state.delegadoTargetIndex = state.bossIndex;
+            }
+        } else {
+            state.falsificadorIndex = -1;
+            state.escrivaoIndex = -1;
+        }
     }
 
     if (state.extras.revolver) {
@@ -561,23 +592,53 @@ function endInteractionLoop() {
 // Monta os dados que a carta vai exibir para um jogador offline
 function buildOfflineRoleData(playerIdx) {
     const p = state.players[playerIdx];
+    let suitKey = p.role;
+    if (p.isDelegado) suitKey = 'DELEGADO';
+    else if (p.isBoss) suitKey = 'BOSS';
+    else if (p.isEscrivao) suitKey = 'ESCRIVAO';
+    else if (p.isFalsificador) suitKey = 'FALSIFICADOR';
+
     const data = {
         team: p.role,
-        suitKey: p.isDelegado ? 'DELEGADO' : (p.isBoss ? 'BOSS' : p.role),
+        suitKey: suitKey,
         hasRevolver: state.extras.revolver && playerIdx === state.revolverOwnerIndex
     };
 
     if (p.role === 'LAW') {
-        data.name  = p.isDelegado ? t('role_delegado') : t('role_law');
         data.desc1 = t('law_desc1');
         data.desc2 = t('law_desc2');
         if (p.isDelegado) {
+            data.name = t('role_delegado');
+            // Delegado vê os fora-da-lei, MENOS o Falsificador (quando Farsante ativa).
+            // Sem Farsante, não vê o Chefe. Aqui o alvo já é um comum != Chefe.
             data.delegateHtml = t('delegate_notice', { name: state.players[state.delegadoTargetIndex].name });
+        } else if (p.isEscrivao) {
+            data.name = t('role_escrivao');
+            data.desc1 = t('escrivao_desc1');
+            data.desc2 = '';
+            // Vê dois nomes: o Delegado verdadeiro e o Falsificador, embaralhados.
+            const dois = shuffle([
+                state.players[state.delegadoIndex].name,
+                state.players[state.falsificadorIndex].name
+            ]);
+            data.escrivaoNames = dois;
+        } else {
+            data.name = t('role_law');
         }
     } else {
-        data.name  = p.isBoss ? t('role_boss') : t('role_outlaw');
         data.desc1 = t('outlaw_desc1');
-        data.desc2 = p.isBoss ? t('boss_desc2') : t('outlaw_desc2');
+        if (p.isBoss) {
+            data.name = t('role_boss');
+            data.desc2 = t('boss_desc2');
+        } else if (p.isFalsificador) {
+            data.name = t('role_falsificador');
+            data.desc2 = t('falsificador_desc2');
+            data.falsificadorNotice = true;
+        } else {
+            data.name = t('role_outlaw');
+            data.desc2 = t('outlaw_desc2');
+        }
+        // Falsificador e Chefe veem os outros fora-da-lei, como qualquer bandido.
         data.outlaws = [];
         state.players.forEach((op, opIdx) => {
             if (op.role === 'OUTLAW' && opIdx !== playerIdx) {
@@ -986,8 +1047,10 @@ function endGame(reason, winner) {
 
     state.players.forEach(p => {
         let title = p.name;
-        if (p.isBoss)     title += t('tag_boss');
-        if (p.isDelegado) title += t('tag_delegado');
+        if (p.isBoss)         title += t('tag_boss');
+        if (p.isDelegado)     title += t('tag_delegado');
+        if (p.isEscrivao)     title += t('tag_escrivao');
+        if (p.isFalsificador) title += t('tag_falsificador');
         if (p.role === 'LAW') {
             lawUl.innerHTML += `<li><span>${title}</span></li>`;
         } else {
@@ -1007,6 +1070,32 @@ function endGame(reason, winner) {
 // ============================================
 
 let lastScreenId = 'screen-splash';
+
+// Farsante exige Distintivo (Delegado + Chefe). Só liga se roles estiver ativo.
+function toggleFarsante() {
+    const rolesOn = document.getElementById('chk-roles').checked;
+    const fars = document.getElementById('chk-farsante');
+    if (!rolesOn) {
+        // pisca a card do Distintivo avisando o requisito
+        const distCard = document.querySelector('.mode-card');
+        if (distCard) {
+            distCard.classList.add('shake-req');
+            setTimeout(() => distCard.classList.remove('shake-req'), 500);
+        }
+        fars.checked = false;
+        return;
+    }
+    fars.checked = !fars.checked;
+}
+
+// Se o Distintivo for desligado, a Farsante desliga junto.
+function syncFarsanteWithRoles() {
+    const rolesOn = document.getElementById('chk-roles').checked;
+    if (!rolesOn) {
+        const fars = document.getElementById('chk-farsante');
+        if (fars) fars.checked = false;
+    }
+}
 
 function showTutorial(type) {
     const activeScreen = document.querySelector('.screen.active');
@@ -1090,19 +1179,30 @@ function listenToRoom(code) {
 
     // Extras: sincronizar checkboxes em tempo real
     db.ref('rooms/' + code + '/extras').on('value', snap => {
-        const extras = snap.val() || { roles: false, revolver: false };
+        const extras = snap.val() || { roles: false, revolver: false, farsante: false };
         const chkRoles    = document.getElementById('online-chk-roles');
         const chkRevolver = document.getElementById('online-chk-revolver');
+        const chkFarsante = document.getElementById('online-chk-farsante');
         chkRoles.classList.toggle('checked-visual', !!extras.roles);
         chkRevolver.classList.toggle('checked-visual', !!extras.revolver);
+        // Farsante exige Distintivo: se roles desligar, farsante desliga junto.
+        const farsanteOn = !!extras.farsante && !!extras.roles;
+        if (chkFarsante) chkFarsante.classList.toggle('checked-visual', farsanteOn);
+        const farsCard = document.getElementById('online-card-farsante');
+        if (farsCard) farsCard.classList.toggle('disabled-card', !extras.roles);
     });
 
     // Extras: somente host pode alterar
     document.getElementById('online-card-roles').onclick = () => {
         db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
             if (snap.val() && snap.val().isHost) {
-                db.ref('rooms/' + code + '/extras/roles').once('value').then(s => {
-                    db.ref('rooms/' + code + '/extras/roles').set(!s.val());
+                db.ref('rooms/' + code + '/extras').once('value').then(s => {
+                    const ex = s.val() || {};
+                    const newRoles = !ex.roles;
+                    const updates = { roles: newRoles };
+                    // desligar Distintivo desliga a Farsante junto
+                    if (!newRoles) updates.farsante = false;
+                    db.ref('rooms/' + code + '/extras').update(updates);
                 });
             }
         });
@@ -1113,6 +1213,26 @@ function listenToRoom(code) {
             if (snap.val() && snap.val().isHost) {
                 db.ref('rooms/' + code + '/extras/revolver').once('value').then(s => {
                     db.ref('rooms/' + code + '/extras/revolver').set(!s.val());
+                });
+            }
+        });
+    };
+
+    document.getElementById('online-card-farsante').onclick = () => {
+        db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
+            if (snap.val() && snap.val().isHost) {
+                db.ref('rooms/' + code + '/extras').once('value').then(s => {
+                    const ex = s.val() || {};
+                    if (!ex.roles) {
+                        // sem Distintivo, não deixa ligar; pisca a card do Distintivo
+                        const distCard = document.getElementById('online-card-roles');
+                        if (distCard) {
+                            distCard.classList.add('shake-req');
+                            setTimeout(() => distCard.classList.remove('shake-req'), 500);
+                        }
+                        return;
+                    }
+                    db.ref('rooms/' + code + '/extras/farsante').set(!ex.farsante);
                 });
             }
         });
@@ -1135,10 +1255,14 @@ function listenToRoom(code) {
 
             const updates = {};
             players.forEach((p, i) => {
-                updates[`players/${p.name}/role`]       = roles[i];
-                updates[`players/${p.name}/isBoss`]     = false;
-                updates[`players/${p.name}/isDelegado`] = false;
+                updates[`players/${p.name}/role`]          = roles[i];
+                updates[`players/${p.name}/isBoss`]        = false;
+                updates[`players/${p.name}/isDelegado`]    = false;
+                updates[`players/${p.name}/isEscrivao`]    = false;
+                updates[`players/${p.name}/isFalsificador`]= false;
             });
+
+            const farsanteOn = !!extras.farsante && !!extras.roles;
 
             if (extras.roles) {
                 const outlawIdxs  = players.map((p, i) => roles[i] === 'OUTLAW' ? i : -1).filter(i => i !== -1);
@@ -1146,11 +1270,30 @@ function listenToRoom(code) {
                 const bossIdx     = outlawIdxs[Math.floor(Math.random() * outlawIdxs.length)];
                 const delegadoIdx = lawIdxs[Math.floor(Math.random() * lawIdxs.length)];
                 const commonOuts  = outlawIdxs.filter(i => i !== bossIdx);
-                const delegadoTargetIdx = commonOuts[Math.floor(Math.random() * commonOuts.length)];
+                let delegadoTargetIdx = commonOuts[Math.floor(Math.random() * commonOuts.length)];
                 updates[`players/${players[bossIdx].name}/isBoss`]         = true;
                 updates[`players/${players[delegadoIdx].name}/isDelegado`] = true;
-                updates['delegadoTargetName'] = players[delegadoTargetIdx].name;
                 updates['delegadoName']       = players[delegadoIdx].name;
+
+                if (farsanteOn) {
+                    // Falsificador: um fora-da-lei comum (nunca o Chefe).
+                    const falsIdx = commonOuts[Math.floor(Math.random() * commonOuts.length)];
+                    updates[`players/${players[falsIdx].name}/isFalsificador`] = true;
+                    updates['falsificadorName'] = players[falsIdx].name;
+                    // Escrivão: um membro da Lei comum (nunca o Delegado).
+                    const escrCands = lawIdxs.filter(i => i !== delegadoIdx);
+                    const escrIdx = escrCands[Math.floor(Math.random() * escrCands.length)];
+                    updates[`players/${players[escrIdx].name}/isEscrivao`] = true;
+                    updates['escrivaoName'] = players[escrIdx].name;
+                    // O Delegado NÃO vê o Falsificador: alvo visível é um comum != Falsificador.
+                    const visiveis = commonOuts.filter(i => i !== falsIdx);
+                    delegadoTargetIdx = visiveis.length > 0
+                        ? visiveis[Math.floor(Math.random() * visiveis.length)]
+                        : bossIdx;
+                    // Os dois nomes que o Escrivão vê (Delegado real + Falsificador), embaralhados.
+                    updates['escrivaoNames'] = shuffle([players[delegadoIdx].name, players[falsIdx].name]);
+                }
+                updates['delegadoTargetName'] = players[delegadoTargetIdx].name;
             }
 
             if (extras.revolver) {
@@ -1196,19 +1339,43 @@ function showOnlineRoleReveal(code) {
             showScreen('screen-online-role-reveal');
 
             // Monta os dados da carta deste jogador
+            let suitKey = p.role;
+            if (p.isDelegado) suitKey = 'DELEGADO';
+            else if (p.isBoss) suitKey = 'BOSS';
+            else if (p.isEscrivao) suitKey = 'ESCRIVAO';
+            else if (p.isFalsificador) suitKey = 'FALSIFICADOR';
+
             const roleData = {
                 team: p.role,
-                suitKey: p.isDelegado ? 'DELEGADO' : (p.isBoss ? 'BOSS' : p.role),
+                suitKey: suitKey,
                 hasRevolver: false
             };
             if (p.role === 'LAW') {
-                roleData.name  = p.isDelegado ? t('role_delegado') : t('role_law');
                 roleData.desc1 = t('law_desc1');
                 roleData.desc2 = t('law_desc2');
+                if (p.isDelegado) {
+                    roleData.name = t('role_delegado');
+                } else if (p.isEscrivao) {
+                    roleData.name = t('role_escrivao');
+                    roleData.desc1 = t('escrivao_desc1');
+                    roleData.desc2 = '';
+                } else {
+                    roleData.name = t('role_law');
+                }
             } else {
-                roleData.name  = p.isBoss ? t('role_boss') : t('role_outlaw');
                 roleData.desc1 = t('outlaw_desc1');
-                roleData.desc2 = p.isBoss ? t('boss_desc2') : t('outlaw_desc2');
+                if (p.isBoss) {
+                    roleData.name = t('role_boss');
+                    roleData.desc2 = t('boss_desc2');
+                } else if (p.isFalsificador) {
+                    roleData.name = t('role_falsificador');
+                    roleData.desc2 = t('falsificador_desc2');
+                    roleData.falsificadorNotice = true;
+                } else {
+                    roleData.name = t('role_outlaw');
+                    roleData.desc2 = t('outlaw_desc2');
+                }
+                // Falsificador e Chefe veem os outros fora-da-lei.
                 roleData.outlaws = [];
                 Object.values(allPlayersObj).forEach(op => {
                     if (op.role === 'OUTLAW' && op.name !== onlineProfile.name) {
@@ -1217,13 +1384,20 @@ function showOnlineRoleReveal(code) {
                 });
             }
 
-            // Dados assíncronos: alvo do delegado e dono do revólver,
-            // resolvidos ANTES de lançar a carta na mesa.
+            // Dados assíncronos: alvo do delegado, nomes do escrivão e dono do revólver.
             const extraFetches = [];
             if (p.isDelegado) {
                 extraFetches.push(
                     db.ref('rooms/' + code + '/delegadoTargetName').once('value').then(s => {
                         if (s.val()) roleData.delegateHtml = t('delegate_notice', { name: s.val() });
+                    })
+                );
+            }
+            if (p.isEscrivao) {
+                extraFetches.push(
+                    db.ref('rooms/' + code + '/escrivaoNames').once('value').then(s => {
+                        const arr = s.val();
+                        if (arr && arr.length === 2) roleData.escrivaoNames = arr;
                     })
                 );
             }
@@ -1992,8 +2166,10 @@ function showOnlineGameOver(code, room, winner, reason) {
 
     players.forEach(p => {
         let title = p.name;
-        if (p.isBoss)     title += ' ' + t('tag_boss');
-        if (p.isDelegado) title += ' ' + t('tag_delegado');
+        if (p.isBoss)         title += ' ' + t('tag_boss');
+        if (p.isDelegado)     title += ' ' + t('tag_delegado');
+        if (p.isEscrivao)     title += ' ' + t('tag_escrivao');
+        if (p.isFalsificador) title += ' ' + t('tag_falsificador');
         if (p.role === 'LAW') {
             lawUl.innerHTML += `<li><span>${title}</span></li>`;
         } else {

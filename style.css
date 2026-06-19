@@ -609,6 +609,18 @@ input[type="text"]::placeholder { color: rgba(136, 19, 55, 0.45); }
 .face-extra ul { list-style: none; }
 .face-extra li { color: var(--outlaw); font-family: var(--font-display); font-size: 1.15rem; }
 .face-extra .delegate-target { color: var(--outlaw); font-weight: 900; }
+.face-extra .escrivao-nomes {
+    color: var(--law);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+.face-extra.falsificador-notice p {
+    font-size: 0.66rem;
+    line-height: 1.25;
+}
+.face-extra.falsificador-notice b { color: var(--vinho); }
 .face-extra.revolver-line {
     display: flex;
     align-items: center;
@@ -1047,6 +1059,7 @@ input[type="text"]::placeholder { color: rgba(136, 19, 55, 0.45); }
 .mini-card .pip-corner { position: absolute; top: 6px; left: 9px; font-size: 1.05rem; color: var(--suit); line-height: 1.05; }
 .mini-card .pip-corner.b { top: auto; left: auto; bottom: 6px; right: 9px; transform: rotate(180deg); }
 .mini-card .pip-big { font-size: 2.5rem; color: var(--suit); line-height: 1; }
+.mini-card .pip-big svg { width: 50px; height: 50px; display: block; margin: 0 auto; }
 .mini-card .nome { font-family: var(--font-display); font-size: 1.2rem; letter-spacing: 1px; color: var(--suit); line-height: 1; margin-top: 4px; }
 .mini-card .meta { font-family: var(--font-body); font-size: 0.67rem; font-weight: 800; color: var(--ink-soft); line-height: 1.25; margin-top: 5px; }
 
@@ -1398,4 +1411,37 @@ body.suspense-dim::after {
     .sabotage-board, #mission-outcome, #mission-outcome-lore { transition: none !important; }
     #app-container.result-shake { animation: none; }
     body.suspense-dim::after { display: none; }
+}
+
+/* Requisito da expansão Farsante e aviso de shake */
+.rule-req {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--vinho);
+    opacity: 0.75;
+    margin-top: 2px;
+}
+.mode-card.shake-req { animation: shakeReq 0.5s ease; }
+@keyframes shakeReq {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    50% { transform: translateX(8px); }
+    75% { transform: translateX(-5px); }
+}
+
+/* Card de expansão desabilitada (Farsante sem Distintivo) */
+.mode-card.disabled-card { opacity: 0.45; }
+.mode-card.disabled-card .rule-req { color: var(--outlaw); opacity: 1; }
+
+/* Subtítulo do nome da expansão (os personagens) */
+.rule-sub {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-top: 2px;
+    line-height: 1.2;
 }

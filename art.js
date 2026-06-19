@@ -5,10 +5,12 @@
 // ════════════════════════════════════════════════════════════
 
 const SUIT_COLORS = {
-    LAW:      { fill: '#2563eb', outline: '#1d4ed8' },
-    DELEGADO: { fill: '#2563eb', outline: '#1d4ed8' },
-    OUTLAW:   { fill: '#dc2626', outline: '#b91c1c' },
-    BOSS:     { fill: '#dc2626', outline: '#b91c1c' }
+    LAW:          { fill: '#2563eb', outline: '#1d4ed8' },
+    DELEGADO:     { fill: '#2563eb', outline: '#1d4ed8' },
+    ESCRIVAO:     { fill: '#2563eb', outline: '#1d4ed8' },
+    OUTLAW:       { fill: '#dc2626', outline: '#b91c1c' },
+    BOSS:         { fill: '#dc2626', outline: '#b91c1c' },
+    FALSIFICADOR: { fill: '#dc2626', outline: '#b91c1c' }
 };
 
 const STAR_POLY = "50.0,16.0 59.1,39.5 84.2,40.9 64.7,56.8 71.2,81.1 50.0,67.5 28.8,81.1 35.3,56.8 15.8,40.9 40.9,39.5";
@@ -64,15 +66,59 @@ function suitBoss(fill, outline, holes) {
         + `<rect x="30" y="14" width="40" height="5.5" rx="2.5" fill="${outline}"/></svg>`;
 }
 
-// Naipe por papel (suitKey: LAW | DELEGADO | OUTLAW | BOSS)
+// ── Naipes em ESCUDO (distintivo) — Delegado, Escrivão, Falsificador ──
+const _SHIELD = 'M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z';
+function _shieldWrap(innerSvg, fill, outline) {
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">`
+        + `<path d="${_SHIELD}" fill="${outline}" stroke="${outline}" stroke-width="8" stroke-linejoin="round"/>`
+        + `<path d="${_SHIELD}" fill="${fill}"/>`
+        + `<path d="${_SHIELD}" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" opacity="0.5" transform="scale(0.86)" transform-origin="50 50"/>`
+        + innerSvg + `</svg>`;
+}
+function _shieldStarInner() {
+    let pts = '', tips = '';
+    for (let j = 0; j < 10; j++) {
+        const rad = (j % 2 === 0) ? 20 : 8.8;
+        const a = (-90 + 36 * j) * Math.PI / 180;
+        pts += `${(50 + rad * Math.cos(a)).toFixed(1)},${(48 + rad * Math.sin(a)).toFixed(1)} `;
+    }
+    for (let i = 0; i < 5; i++) {
+        const a = (-90 + 72 * i) * Math.PI / 180;
+        tips += `<circle cx="${(50 + 20 * Math.cos(a)).toFixed(1)}" cy="${(48 + 20 * Math.sin(a)).toFixed(1)}" r="3.6"/>`;
+    }
+    return `<g fill="#fff"><polygon points="${pts.trim()}"/>${tips}</g>`;
+}
+function _shieldPenInner(outline) {
+    return `<g transform="translate(50 50) rotate(42) translate(-50 -50)">`
+        + `<rect x="44" y="26" width="12" height="34" rx="5" fill="#fff"/>`
+        + `<rect x="43.5" y="56" width="13" height="3.5" rx="1.5" fill="${outline}"/>`
+        + `<path d="M44 60 L56 60 L50 76 Z" fill="#fff"/>`
+        + `<path d="M50 62 L50 73" stroke="${outline}" stroke-width="1.8" stroke-linecap="round"/>`
+        + `<circle cx="50" cy="63.5" r="1.8" fill="${outline}"/>`
+        + `<rect x="45.5" y="22" width="9" height="6" rx="2.5" fill="${outline}"/></g>`;
+}
+function _shieldSkullInner(outline) {
+    return `<g transform="translate(50 49) scale(0.5) translate(-50 -50)">`
+        + `<path d="${SKULL_PATH}" fill="#fff"/>`
+        + `<ellipse cx="36.5" cy="46" rx="10" ry="12" fill="${outline}"/>`
+        + `<ellipse cx="63.5" cy="46" rx="10" ry="12" fill="${outline}"/>`
+        + `<path d="M50 58 L43 70 Q50 74 57 70 Z" fill="${outline}"/></g>`;
+}
+function suitDelegadoShield(fill, outline) { return _shieldWrap(_shieldStarInner(), fill, outline); }
+function suitEscrivao(fill, outline)       { return _shieldWrap(_shieldPenInner(outline), fill, outline); }
+function suitFalsificador(fill, outline)   { return _shieldWrap(_shieldSkullInner(outline), fill, outline); }
+
+// Naipe por papel (suitKey: LAW | DELEGADO | ESCRIVAO | OUTLAW | BOSS | FALSIFICADOR)
 function suitSVG(suitKey) {
     const c = SUIT_COLORS[suitKey] || SUIT_COLORS.LAW;
-    if (suitKey === 'DELEGADO') return suitDelegado(c.fill, c.outline);
-    if (suitKey === 'OUTLAW')   return suitSkull(c.fill, c.outline, '#fff');
-    if (suitKey === 'BOSS')     return suitBoss(c.fill, c.outline, '#fff');
+    if (suitKey === 'DELEGADO')     return suitDelegadoShield(c.fill, c.outline);
+    if (suitKey === 'ESCRIVAO')     return suitEscrivao(c.fill, c.outline);
+    if (suitKey === 'FALSIFICADOR') return suitFalsificador(c.fill, c.outline);
+    if (suitKey === 'OUTLAW')       return suitSkull(c.fill, c.outline, '#fff');
+    if (suitKey === 'BOSS')         return suitBoss(c.fill, c.outline, '#fff');
     return suitStar(c.fill, c.outline);
 }
-const SUIT_LETTER = { LAW: 'L', DELEGADO: 'D', OUTLAW: 'F', BOSS: 'C' };
+const SUIT_LETTER = { LAW: 'L', DELEGADO: 'D', ESCRIVAO: 'E', OUTLAW: 'F', BOSS: 'C', FALSIFICADOR: 'X' };
 
 // ════════════════════════════════════════════
 // FICHAS (viewBox 0 0 200 200) — OFICIAIS (idênticas ao mockup aprovado)

@@ -42,17 +42,22 @@ mecânicas novas aprovadas**. Gameplay 100% preservado.
 `index.html`, `style.css`, `app.js` (reescritos) · `i18n.js`, `fx.js` (novos) ·
 `sounds/card.wav, chip.wav, shot.wav` (novos) · demais assets inalterados.
 
-## Validação
-114 verificações automatizadas, 0 falhas:
-- smoke_test.js (66): fluxo offline completo com naipes ilustrados, fichas SVG na trilha,
-  mesa de decisão (fichas cumprir/sabotar aleatórias) e resultado (fichas arremessadas).
-- smoke_test2.js (39): extras, duelo, chefe, fim de jogo.
-- online_test.js (9): mesa de decisão e resultado nos contêineres online.
 
-## Integração concluída nesta fase
-- Bloco 1: naipes ilustrados (estrela/caveira/delegado/chefe) nas cartas de personagem.
-- Bloco 2: fichas oficiais SVG na trilha de missões e rejeições.
-- Bloco 3: tela de execução da missão com fichas aleatórias (offline + online).
-- Bloco 4: tela de resultado com fichas arremessadas + suspense (offline + online),
-  e correção do overlay de vitória (agora brilho nas bordas, sem cobrir o texto).
-Sons novos: suspense.wav, thud.wav.
+
+## Expansão FARSANTE (Escrivão + Falsificador)
+Terceira expansão, adaptação do Percival/Morgana do Avalon. Implementada offline e online.
+- Escrivão (Lei): vê dois nomes embaralhados (Delegado real + Falsificador), sem saber qual é qual.
+- Falsificador (Fora-da-Lei): vilão comum (vê os outros foras-da-lei incl. Chefe, pode sabotar),
+  invisível ao Delegado, aparece como possível Delegado ao Escrivão, e parece Lei no duelo.
+- Falsificador nunca é o Chefe; Escrivão nunca é o Delegado (garantido).
+- Regra condicional do Delegado: sem Farsante não vê o Chefe; com Farsante vê o Chefe mas não o Falsificador.
+- Farsante exige Distintivo (Delegado+Chefe); desligar Distintivo desliga Farsante.
+- Naipes novos em escudo: Escrivão (escudo+caneta), Falsificador (escudo+caveira).
+- Três manuais padronizados (Duelo, Distintivo, Farsante) via showTutorial.
+- Arte da expansão: images/exp-farsante.png.
+- Botões azuis/vermelhos padronizados para borda vinho.
+
+## Validação (129 verificações)
+- smoke_test.js (66), smoke_test2.js (40), online_test.js (9): jogo base.
+- farsante_test.js (8): invariantes do sorteio offline em 400 distribuições.
+- farsante_online_test.js (6): invariantes do sorteio online em 400 distribuições.

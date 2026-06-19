@@ -67,9 +67,16 @@ function buildCardFace(faceEl, roleData) {
     if (roleData.delegateHtml) {
         extraHtml += `<div class="face-extra"><p>${roleData.delegateHtml}</p></div>`;
     }
+    if (roleData.escrivaoNames && roleData.escrivaoNames.length === 2) {
+        extraHtml += `<div class="face-extra"><h3>${t('escrivao_title')}</h3><p class="escrivao-nomes">`
+            + `${roleData.escrivaoNames[0]} &middot; ${roleData.escrivaoNames[1]}</p></div>`;
+    }
     if (roleData.outlaws && roleData.outlaws.length) {
         extraHtml += `<div class="face-extra"><h3>${t('others_outlaws')}</h3><ul>` +
             roleData.outlaws.map(o => `<li>${o}</li>`).join('') + `</ul></div>`;
+    }
+    if (roleData.falsificadorNotice) {
+        extraHtml += `<div class="face-extra falsificador-notice"><p>${t('falsificador_notice')}</p></div>`;
     }
     if (roleData.hasRevolver) {
         extraHtml += `<div class="face-extra revolver-line">${t('has_revolver')} <img src="images/revolver.png" alt=""></div>`;

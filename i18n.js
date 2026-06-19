@@ -18,10 +18,16 @@ const I18N = {
         back_menu: 'Voltar ao menu',
         back: 'Voltar',
         extras_title: 'Personagens extras',
-        extra_roles: 'Delegado e<br>Chefe da Gangue',
-        extra_roles_inline: 'Delegado e Chefe',
-        extra_revolver: 'Revólver<br>Carregado',
-        extra_revolver_inline: 'Revólver Carregado',
+        extra_roles: 'Distintivo',
+        extra_roles_sub: 'Delegado e Chefe da Gangue',
+        extra_roles_inline: 'Distintivo',
+        extra_revolver: 'Duelo',
+        extra_revolver_sub: 'Revólver carregado',
+        extra_farsante: 'Farsante',
+        extra_farsante_sub: 'Escrivão e Falsificador',
+        farsante_req: 'Requer Distintivo',
+        extra_revolver_inline: 'Duelo',
+        extra_farsante_inline: 'Farsante',
         confirm: 'Abrir a mesa!',
         min_players: 'Mínimo de 5 jogadores para iniciar.',
         max_players: 'Máximo de 10 jogadores alcançado.',
@@ -53,6 +59,12 @@ const I18N = {
         role_delegado: 'Delegado',
         role_outlaw: 'Fora da Lei',
         role_boss: 'Chefe da Gangue',
+        role_escrivao: 'Escrivão',
+        role_falsificador: 'Falsificador',
+        escrivao_desc1: 'Um destes é o Delegado de verdade. O outro é um impostor. Descubra em quem confiar.',
+        escrivao_title: 'Delegado ou Falsificador?',
+        falsificador_desc2: 'Mas finge ser a autoridade.',
+        falsificador_notice: 'Você aparece como possível <b>Delegado</b> para o Escrivão. No duelo, parece ser da <b>Lei</b>.',
         law_desc1: 'Ajude o Xerife nas missões e descubra quem são os fora-da-lei.',
         law_desc2: 'Você deve cumprir todas as missões em que estiver.',
         outlaw_desc1: 'Você está infiltrado na cidade.',
@@ -137,6 +149,8 @@ const I18N = {
         traitor: 'Traíra',
         tag_boss: ' (CHEFE)',
         tag_delegado: ' (DELEGADO)',
+        tag_escrivao: ' (ESCRIVÃO)',
+        tag_falsificador: ' (FALSIFICADOR)',
         win_outlaw_rejects: 'Vitória dos Fora-da-Lei! 5 equipes seguidas foram rejeitadas pela cidade.',
         win_law_missions: 'Vitória da Lei! A cidade de Red Rock foi salva.',
         win_outlaw_missions: 'Vitória dos Fora-da-Lei! Red Rock sucumbiu.',
@@ -211,6 +225,22 @@ const I18N = {
 
         // ---- Tutoriais ----
         tutorials: {
+            FARSANTE: `
+                <p class="tut-sub">Quem é o verdadeiro informante da Lei? Dois novos personagens entram, e um deles é pura fachada.</p>
+                <div class="card">
+                    <h2>Os dois novos papéis</h2>
+                    <div class="teams"><div class="mini-card"><span class="pip-big"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="8" stroke-linejoin="round"/><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="#2563eb"/><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" opacity="0.5" transform="scale(0.86)" transform-origin="50 50"/><g transform="translate(50 50) rotate(42) translate(-50 -50)"><rect x="44" y="26" width="12" height="34" rx="5" fill="#fff"/><rect x="43.5" y="56" width="13" height="3.5" rx="1.5" fill="#1d4ed8"/><path d="M44 60 L56 60 L50 76 Z" fill="#fff"/><path d="M50 62 L50 73" stroke="#1d4ed8" stroke-width="1.8" stroke-linecap="round"/><circle cx="50" cy="63.5" r="1.8" fill="#1d4ed8"/><rect x="45.5" y="22" width="9" height="6" rx="2.5" fill="#1d4ed8"/></g></svg></span><span class="nome">Escrivão</span><span class="meta">Da Lei. Vê dois nomes, mas não sabe qual é o Delegado de verdade.</span></div><div class="mini-card red"><span class="pip-big"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="#b91c1c" stroke="#b91c1c" stroke-width="8" stroke-linejoin="round"/><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="#dc2626"/><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" opacity="0.5" transform="scale(0.86)" transform-origin="50 50"/><g transform="translate(50 49) scale(0.5) translate(-50 -50)"><path d="M50 10 C27 10 15 26 15 44 C15 56 21 63 28 67 L28 78 Q28 85 35 85 L65 85 Q72 85 72 78 L72 67 C79 63 85 56 85 44 C85 26 73 10 50 10 Z" fill="#fff"/><ellipse cx="36.5" cy="46" rx="10" ry="12" fill="#b91c1c"/><ellipse cx="63.5" cy="46" rx="10" ry="12" fill="#b91c1c"/><path d="M50 58 L43 70 Q50 74 57 70 Z" fill="#b91c1c"/></g></svg></span><span class="nome">Falsificador</span><span class="meta">Fora-da-lei. Finge ser a autoridade para enganar o Escrivão.</span></div></div>
+                    <p>Esta expansão <strong>exige o Delegado e o Chefe</strong> (Distintivo).</p>
+                </div>
+                <div class="card">
+                    <h2>O dilema do Escrivão</h2>
+                    <p>O Escrivão vê <strong>dois nomes</strong>: um é o <strong>Delegado</strong> verdadeiro, o outro é o <strong>Falsificador</strong> disfarçado. Mas <strong>não sabe qual é qual</strong> e precisa deduzir em quem confiar.</p>
+                </div>
+                <div class="card">
+                    <h2>O disfarce do Falsificador</h2>
+                    <p>É um <strong>fora-da-lei comum</strong>: conhece os outros bandidos e <strong>pode sabotar</strong>. O <strong>Delegado não o enxerga</strong>, então ele blefa livremente. No <strong>duelo</strong>, aparece como time da <strong>Lei</strong>.</p>
+                    <div class="alerta"><span class="bang">!</span><span>Com a Farsante ativa, o Delegado passa a <strong>ver o Chefe</strong>, e quem some da visão dele é o <strong>Falsificador</strong>. Os dois são sempre pessoas diferentes.</span></div>
+                </div>`,
             GENERAL: `
                 <p class="tut-sub"><strong>Saloon</strong> é um jogo de dedução social para 5 a 10 jogadores. Confie em quem merece.</p>
                 <div class="card">
@@ -273,10 +303,16 @@ const I18N = {
         back_menu: 'Back to menu',
         back: 'Back',
         extras_title: 'Extra characters',
-        extra_roles: 'Marshal and<br>Gang Boss',
-        extra_roles_inline: 'Marshal and Boss',
-        extra_revolver: 'Loaded<br>Revolver',
-        extra_revolver_inline: 'Loaded Revolver',
+        extra_roles: 'Badge',
+        extra_roles_sub: 'Marshal and Gang Boss',
+        extra_roles_inline: 'Badge',
+        extra_revolver: 'Duel',
+        extra_revolver_sub: 'Loaded revolver',
+        extra_farsante: 'Farce',
+        extra_farsante_sub: 'Clerk and Forger',
+        farsante_req: 'Requires Badge',
+        extra_revolver_inline: 'Duel',
+        extra_farsante_inline: 'Farce',
         confirm: 'Open the table!',
         min_players: 'At least 5 players are needed to start.',
         max_players: 'Maximum of 10 players reached.',
@@ -305,6 +341,12 @@ const I18N = {
         role_delegado: 'Marshal',
         role_outlaw: 'Outlaw',
         role_boss: 'Gang Boss',
+        role_escrivao: 'Clerk',
+        role_falsificador: 'Forger',
+        escrivao_desc1: 'One of these is the real Marshal. The other is an impostor. Figure out who to trust.',
+        escrivao_title: 'Marshal or Forger?',
+        falsificador_desc2: 'But poses as the authority.',
+        falsificador_notice: 'You appear as a possible <b>Marshal</b> to the Clerk. In the duel, you look like the <b>Law</b>.',
         law_desc1: 'Help the Sheriff on missions and find out who the outlaws are.',
         law_desc2: 'You must complete every mission you join.',
         outlaw_desc1: 'You are undercover in town.',
@@ -383,6 +425,8 @@ const I18N = {
         traitor: 'Traitor',
         tag_boss: ' (BOSS)',
         tag_delegado: ' (MARSHAL)',
+        tag_escrivao: ' (CLERK)',
+        tag_falsificador: ' (FORGER)',
         win_outlaw_rejects: 'Outlaws win! The town rejected 5 teams in a row.',
         win_law_missions: 'The Law wins! The town of Red Rock is safe.',
         win_outlaw_missions: 'Outlaws win! Red Rock has fallen.',
@@ -453,6 +497,22 @@ const I18N = {
         ],
 
         tutorials: {
+            FARSANTE: `
+                <p class="tut-sub">Who is the Law real informant? Two new characters join, and one is pure facade.</p>
+                <div class="card">
+                    <h2>The two new roles</h2>
+                    <div class="teams"><div class="mini-card"><span class="pip-big"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="8" stroke-linejoin="round"/><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="#2563eb"/><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" opacity="0.5" transform="scale(0.86)" transform-origin="50 50"/><g transform="translate(50 50) rotate(42) translate(-50 -50)"><rect x="44" y="26" width="12" height="34" rx="5" fill="#fff"/><rect x="43.5" y="56" width="13" height="3.5" rx="1.5" fill="#1d4ed8"/><path d="M44 60 L56 60 L50 76 Z" fill="#fff"/><path d="M50 62 L50 73" stroke="#1d4ed8" stroke-width="1.8" stroke-linecap="round"/><circle cx="50" cy="63.5" r="1.8" fill="#1d4ed8"/><rect x="45.5" y="22" width="9" height="6" rx="2.5" fill="#1d4ed8"/></g></svg></span><span class="nome">Clerk</span><span class="meta">Law side. Sees two names, but does not know which is the real Marshal.</span></div><div class="mini-card red"><span class="pip-big"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="#b91c1c" stroke="#b91c1c" stroke-width="8" stroke-linejoin="round"/><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="#dc2626"/><path d="M22 16 L78 16 Q82 16 82 22 L82 50 Q82 74 50 88 Q18 74 18 50 L18 22 Q18 16 22 16 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" opacity="0.5" transform="scale(0.86)" transform-origin="50 50"/><g transform="translate(50 49) scale(0.5) translate(-50 -50)"><path d="M50 10 C27 10 15 26 15 44 C15 56 21 63 28 67 L28 78 Q28 85 35 85 L65 85 Q72 85 72 78 L72 67 C79 63 85 56 85 44 C85 26 73 10 50 10 Z" fill="#fff"/><ellipse cx="36.5" cy="46" rx="10" ry="12" fill="#b91c1c"/><ellipse cx="63.5" cy="46" rx="10" ry="12" fill="#b91c1c"/><path d="M50 58 L43 70 Q50 74 57 70 Z" fill="#b91c1c"/></g></svg></span><span class="nome">Forger</span><span class="meta">Outlaw. Poses as the authority to fool the Clerk.</span></div></div>
+                    <p>This expansion <strong>requires the Marshal and Boss</strong> (Badge).</p>
+                </div>
+                <div class="card">
+                    <h2>The Clerk dilemma</h2>
+                    <p>The Clerk sees <strong>two names</strong>: one is the real <strong>Marshal</strong>, the other is the disguised <strong>Forger</strong>. But does <strong>not know which is which</strong> and must deduce who to trust.</p>
+                </div>
+                <div class="card">
+                    <h2>The Forger disguise</h2>
+                    <p>A <strong>common outlaw</strong>: knows the other bandits and <strong>can sabotage</strong>. The <strong>Marshal cannot see him</strong>, so he bluffs freely. In the <strong>duel</strong>, he appears as the <strong>Law</strong>.</p>
+                    <div class="alerta"><span class="bang">!</span><span>With Farce active, the Marshal now <strong>sees the Boss</strong>, and the one hidden from him becomes the <strong>Forger</strong>. They are always different people.</span></div>
+                </div>`,
             GENERAL: `
                 <p class="tut-sub"><strong>Saloon</strong> is a social deduction game for 5 to 10 players. Trust the right people.</p>
                 <div class="card">
