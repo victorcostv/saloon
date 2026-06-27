@@ -26,6 +26,66 @@ const I18N = {
         extra_farsante: 'Farsante',
         extra_farsante_sub: 'Escrivão e Falsificador',
         farsante_req: 'Requer Distintivo',
+        party_mode_title: 'Modo Party',
+        party_mode_sub: 'Este aparelho vira a tela. Jogadores entram pelo celular.',
+        screen_join_title: 'Entrem pelo celular',
+        screen_join_sub: 'Abram o Saloon, escolham "Entrar em sala" e digitem o código acima.',
+        screen_join_sub_qr: 'Escaneiem o QR code ou entrem com o código da sala.',
+        screen_scan_to_join: 'Aponte a câmera',
+        screen_dealing_title: 'Distribuindo as cartas',
+        screen_dealing_sub: 'Cada jogador está vendo seu papel no celular...',
+        screen_track: 'Trilha',
+        screen_sheriff_picks: '{name} monta uma equipe de {size} agentes.',
+        rejected_teams_short: 'Rejeições',
+        screen_mission_label: 'Missão',
+        screen_sheriff_label: 'Xerife',
+        screen_vote_title: 'Votação da Equipe',
+        screen_vote_sub: 'A mesa decide: esta equipe vai para a Missão {num}?',
+        screen_of: 'de',
+        screen_voted: 'votaram',
+        proposed_team: 'Equipe Proposta',
+        screen_mission_title: 'Missão em Andamento',
+        screen_mission_sub: 'Os agentes partiram para Red Rock...',
+        screen_mission_dust: 'O DESERTO OBSERVA EM SILÊNCIO',
+        screen_agents_decided: 'agentes decidiram',
+        mission_success: 'Missão Cumprida!',
+        mission_failed: 'Missão Sabotada!',
+        one_sabotage: 'sabotagem',
+        n_sabotages: 'sabotagens',
+        vote_yes_label: 'Aprovaram',
+        vote_no_label: 'Rejeitaram',
+        screen_vote_timeout: 'O tempo acabou! A equipe foi aprovada automaticamente.',
+        law_wins: 'A Lei Venceu!',
+        outlaw_wins: 'Os Fora-da-Lei Venceram!',
+        screen_boss_title: 'A Última Bala',
+        screen_boss_sub: 'O Chefe da Gangue tenta adivinhar quem é o Delegado...',
+        screen_boss_dust: 'UM TIRO. UMA CHANCE.',
+        screen_new_game: 'Nova Partida',
+        phone_watch_screen_result: 'O resultado e os papéis foram revelados no telão!',
+        phone_boss_aiming_title: 'O Chefe está mirando',
+        phone_boss_aiming_sub: 'Acompanhe pelo telão o desfecho da última bala.',
+        screen_duel_title: 'Hora do Duelo',
+        screen_duel_choose_sub: '{name} tem o revólver e escolhe quem desafiar...',
+        screen_duel_dust: 'A POEIRA BAIXA SOBRE RED ROCK',
+        screen_duel_faceoff_title: 'Frente a Frente',
+        screen_duel_faceoff_sub: 'Atirar ou recuar? Os dois decidem em segredo...',
+        screen_duel_done: 'O Duelo Terminou',
+        screen_duel_resolved: 'OS SEGREDOS FORAM REVELADOS NO ACERTO DE CONTAS',
+        phone_duel_title: 'Hora do Duelo',
+        phone_duel_sub: 'Acompanhe o duelo pelo telão.',
+        screen_start: 'Começar a partida',
+        screen_need_players: 'Aguardando jogadores (mínimo 5)',
+        screen_need_players_count: 'Aguardando jogadores: {count}/5',
+        phone_summary_eyebrow: 'A mesa de Red Rock',
+        phone_watch_hint: 'Acompanhe pelo telão. Seu celular avisa quando for sua vez.',
+        phone_review_card: 'Rever minha carta',
+        phone_back_summary: 'Voltar',
+        phone_desc_law: 'Ajude o Xerife a cumprir as missões e descubra os fora-da-lei infiltrados.',
+        phone_desc_delegado: 'Você conhece os fora-da-lei desde o início, mas aja com cautela para não se entregar.',
+        phone_desc_escrivao: 'Você vê dois nomes: o Delegado verdadeiro e o Falsificador. Descubra em quem confiar.',
+        phone_desc_outlaw: 'Sabote as missões sem ser percebido e leve a gangue à vitória.',
+        phone_desc_boss: 'Lidera a gangue. Se a Lei vencer 3 missões, tenta adivinhar o Delegado para roubar a vitória.',
+        phone_desc_falsificador: 'Fora-da-lei que finge ser a autoridade. Aparece como possível Delegado e parece da Lei no duelo.',
         extra_revolver_inline: 'Duelo',
         extra_farsante_inline: 'Farsante',
         confirm: 'Abrir a mesa!',
@@ -241,6 +301,36 @@ const I18N = {
                     <p>É um <strong>fora-da-lei comum</strong>: conhece os outros bandidos e <strong>pode sabotar</strong>. O <strong>Delegado não o enxerga</strong>, então ele blefa livremente. No <strong>duelo</strong>, aparece como time da <strong>Lei</strong>.</p>
                     <div class="alerta"><span class="bang">!</span><span>Com a Farsante ativa, o Delegado passa a <strong>ver o Chefe</strong>, e quem some da visão dele é o <strong>Falsificador</strong>. Os dois são sempre pessoas diferentes.</span></div>
                 </div>`,
+            PARTY: `
+                <p class="tut-sub">Transforme uma TV ou notebook na mesa de jogo. Perfeito para jogar todos juntos na mesma sala.</p>
+                <div class="card">
+                    <h2>Como funciona</h2>
+                    <p>Quem liga o <strong>Modo Party</strong> vira a <strong>tela</strong>: o aparelho mostra o tabuleiro, as votações e os resultados para todos verem. Quem é a tela <strong>não joga</strong>.</p>
+                </div>
+                <div class="card">
+                    <h2>Os jogadores</h2>
+                    <p>Cada jogador entra pelo <strong>próprio celular</strong> (pelo código ou QR code) e usa o telefone como controle: vota, cumpre missões e participa dos duelos. Fora da sua vez, o celular mostra um resumo dos papéis em jogo.</p>
+                </div>
+                <div class="card">
+                    <h2>Cronômetros</h2>
+                    <p>No Modo Party, a votação tem <strong>1 minuto</strong> (aprova sozinha se o tempo acabar) e o Xerife tem <strong>1min30</strong> para montar a equipe (passa a vez se demorar). Isso mantém o ritmo da festa.</p>
+                </div>
+            `,
+            PARTY: `
+                <p class="tut-sub">Turn a TV or laptop into the game table. Perfect for playing together in the same room.</p>
+                <div class="card">
+                    <h2>How it works</h2>
+                    <p>Whoever turns on <strong>Party Mode</strong> becomes the <strong>screen</strong>: the device shows the board, votes and results for everyone to see. The screen <strong>does not play</strong>.</p>
+                </div>
+                <div class="card">
+                    <h2>The players</h2>
+                    <p>Each player joins from their <strong>own phone</strong> (by code or QR) and uses it as a controller: voting, running missions and dueling. When it is not their turn, the phone shows a summary of the roles in play.</p>
+                </div>
+                <div class="card">
+                    <h2>Timers</h2>
+                    <p>In Party Mode, voting lasts <strong>1 minute</strong> (auto-approves on timeout) and the Sheriff has <strong>1m30</strong> to pick the team (turn passes on timeout). This keeps the party flowing.</p>
+                </div>
+            `,
             GENERAL: `
                 <p class="tut-sub"><strong>Saloon</strong> é um jogo de dedução social para 5 a 10 jogadores. Confie em quem merece.</p>
                 <div class="card">
@@ -311,6 +401,66 @@ const I18N = {
         extra_farsante: 'Farce',
         extra_farsante_sub: 'Clerk and Forger',
         farsante_req: 'Requires Badge',
+        party_mode_title: 'Party Mode',
+        party_mode_sub: 'This device becomes the screen. Players join from their phones.',
+        screen_join_title: 'Join from your phone',
+        screen_join_sub: 'Open Saloon, choose "Join room" and enter the code above.',
+        screen_join_sub_qr: 'Scan the QR code or join with the room code.',
+        screen_scan_to_join: 'Point your camera',
+        screen_dealing_title: 'Dealing the cards',
+        screen_dealing_sub: 'Each player is checking their role on their phone...',
+        screen_track: 'Track',
+        screen_sheriff_picks: '{name} picks a team of {size} agents.',
+        rejected_teams_short: 'Rejections',
+        screen_mission_label: 'Mission',
+        screen_sheriff_label: 'Sheriff',
+        screen_vote_title: 'Team Vote',
+        screen_vote_sub: 'The table decides: does this team go to Mission {num}?',
+        screen_of: 'of',
+        screen_voted: 'voted',
+        proposed_team: 'Proposed Team',
+        screen_mission_title: 'Mission Underway',
+        screen_mission_sub: 'The agents rode off to Red Rock...',
+        screen_mission_dust: 'THE DESERT WATCHES IN SILENCE',
+        screen_agents_decided: 'agents decided',
+        mission_success: 'Mission Accomplished!',
+        mission_failed: 'Mission Sabotaged!',
+        one_sabotage: 'sabotage',
+        n_sabotages: 'sabotages',
+        vote_yes_label: 'Approved',
+        vote_no_label: 'Rejected',
+        screen_vote_timeout: 'Time is up! The team was approved automatically.',
+        law_wins: 'The Law Wins!',
+        outlaw_wins: 'The Outlaws Win!',
+        screen_boss_title: 'The Last Bullet',
+        screen_boss_sub: 'The Gang Boss tries to guess who the Marshal is...',
+        screen_boss_dust: 'ONE SHOT. ONE CHANCE.',
+        screen_new_game: 'New Game',
+        phone_watch_screen_result: 'The result and roles were revealed on the big screen!',
+        phone_boss_aiming_title: 'The Boss is aiming',
+        phone_boss_aiming_sub: 'Watch the big screen for the last bullet outcome.',
+        screen_duel_title: 'Duel Time',
+        screen_duel_choose_sub: '{name} has the revolver and chooses who to challenge...',
+        screen_duel_dust: 'THE DUST SETTLES OVER RED ROCK',
+        screen_duel_faceoff_title: 'Face to Face',
+        screen_duel_faceoff_sub: 'Shoot or back down? Both decide in secret...',
+        screen_duel_done: 'The Duel Is Over',
+        screen_duel_resolved: 'SECRETS WERE REVEALED IN THE SHOWDOWN',
+        phone_duel_title: 'Duel Time',
+        phone_duel_sub: 'Watch the duel on the big screen.',
+        screen_start: 'Start the match',
+        screen_need_players: 'Waiting for players (minimum 5)',
+        screen_need_players_count: 'Waiting for players: {count}/5',
+        phone_summary_eyebrow: 'The Red Rock table',
+        phone_watch_hint: 'Follow on the big screen. Your phone alerts you when it is your turn.',
+        phone_review_card: 'Review my card',
+        phone_back_summary: 'Back',
+        phone_desc_law: 'Help the Sheriff complete missions and find the infiltrated outlaws.',
+        phone_desc_delegado: 'You know the outlaws from the start, but act carefully so you are not exposed.',
+        phone_desc_escrivao: 'You see two names: the real Marshal and the Forger. Figure out who to trust.',
+        phone_desc_outlaw: 'Sabotage missions without being noticed and lead the gang to victory.',
+        phone_desc_boss: 'Leads the gang. If the Law wins 3 missions, tries to guess the Marshal to steal the win.',
+        phone_desc_falsificador: 'An outlaw posing as the authority. Appears as a possible Marshal and looks like the Law in the duel.',
         extra_revolver_inline: 'Duel',
         extra_farsante_inline: 'Farce',
         confirm: 'Open the table!',

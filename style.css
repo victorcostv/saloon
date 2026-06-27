@@ -1517,3 +1517,223 @@ body.suspense-dim::after {
     margin-left: auto;
 }
 .reveal-li .reveal-suit svg { width: 100%; height: 100%; display: block; }
+
+/* ════════════════════════════════════════
+   MODO TELA — TELÃO (landscape, tela cheia)
+   ════════════════════════════════════════ */
+/* MODO TELA: quando o dispositivo é o telão, o container ocupa a tela inteira */
+body.is-screen #app-container {
+    width: 100vw !important;
+    max-width: none !important;
+    padding: 0 !important;
+}
+.screen-tela { padding: 0 !important; max-width: none !important; width: 100vw; }
+.screen-tela.active { display: flex; flex-direction: column; }
+.tela-top { display: flex; align-items: center; justify-content: space-between; padding: 2.5vh 4vw 0; }
+.tela-brand { font-family: var(--font-display); font-size: 2.8vw; letter-spacing: 3px; color: var(--accent);
+    text-shadow: -2px -2px 0 var(--bc), 2px -2px 0 var(--bc), -2px 2px 0 var(--bc), 2px 2px 0 var(--bc), 0 5px 0 var(--bc); }
+.tela-code { font-family: var(--font-display); font-size: 1.8vw; letter-spacing: 3px; color: #fff;
+    background: var(--vinho); padding: .8vh 2vw; border-radius: 999px; box-shadow: 0 5px 0 var(--vinho-d); }
+.tela-h1 { font-family: var(--font-display); font-size: 3.4vw; letter-spacing: 2px; color: var(--accent);
+    text-align: center; text-shadow: 0 4px 6px rgba(0,0,0,.5); margin: 2vh 0 .5vh; }
+.tela-sub { text-align: center; font-weight: 800; font-size: 1.4vw; color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,.4); margin-bottom: 3vh; }
+.tela-hint { text-align: center; font-weight: 800; font-size: 1.3vw; color: #fff; opacity: .85; }
+/* Lobby do telão: jogadores entrando */
+.tela-lobby-players { display: flex; flex-wrap: wrap; justify-content: center; gap: 2vw; padding: 0 4vw; margin-bottom: 3vh; }
+.tela-lobby-player { display: flex; flex-direction: column; align-items: center; gap: .8vh; }
+.tlp-av { width: 7vw; height: 7vw; }
+.tlp-av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: .4vw solid var(--accent); }
+.tela-lobby-player span { font-family: var(--font-display); font-size: 1.5vw; letter-spacing: .5px; color: #fff; }
+/* Expansões no telão */
+.tela-expansions { display: flex; justify-content: center; gap: 2vw; padding: 0 4vw; margin-bottom: auto; }
+.tela-exp-card { display: flex; align-items: center; gap: 1.2vw; background: #fff; border: .35vw solid #e8d5c0;
+    border-radius: 1.2vw; padding: 1.5vh 1.8vw; cursor: pointer; min-width: 20vw; }
+.tela-exp-card.on { border-color: var(--law); background: #eef4ff; }
+.tela-exp-card.disabled { opacity: .5; }
+.tela-exp-card.shake-req { animation: shakeReq .5s ease; }
+.tec-check { width: 2.2vw; height: 2.2vw; border-radius: .5vw; border: .3vw solid var(--vinho); display: flex;
+    align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.4vw; color: var(--law); flex-shrink: 0; }
+.tec-icon { width: 3vw; height: 3vw; object-fit: contain; flex-shrink: 0; }
+.tec-text { display: flex; flex-direction: column; }
+.tec-title { font-family: var(--font-display); font-size: 1.6vw; letter-spacing: .5px; color: var(--vinho); }
+.tec-sub { font-weight: 800; font-size: .95vw; color: var(--ink-soft); }
+.tec-req { font-weight: 800; font-size: .85vw; color: var(--outlaw); margin-top: .3vh; }
+.tela-bottom { padding: 2vh 4vw 3vh; display: flex; flex-direction: column; align-items: center; gap: 1vh; }
+.tela-bottom .btn { font-size: 2vw; padding: 1.5vh 4vw; }
+
+/* ════════════════════════════════════════
+   MODO TELA — RESUMO DO CELULAR
+   ════════════════════════════════════════ */
+#screen-phone-summary.active { display: flex; flex-direction: column; }
+.phone-summary-head { text-align: center; margin-bottom: 12px; }
+.phone-watch-hint { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--vinho);
+    color: #fff; border-radius: 12px; padding: 8px; font-weight: 800; font-size: .82rem; margin-top: 8px; }
+.roles-grid { display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; padding: 2px; }
+.role-block { display: flex; align-items: center; gap: 12px; background: #fff; border: 4px solid #e8d5c0;
+    border-radius: 16px; padding: 9px 12px; }
+.role-block.law { border-color: #bcd0f5; } .role-block.outlaw { border-color: #f5c4c4; }
+.rb-suit { width: 42px; height: 42px; flex-shrink: 0; } .rb-suit svg { width: 100%; height: 100%; display: block; }
+.rb-name { flex: 1; font-family: var(--font-display); font-size: 1.3rem; letter-spacing: .5px; }
+.role-block.law .rb-name { color: var(--law); } .role-block.outlaw .rb-name { color: var(--outlaw); }
+.rb-info { width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; border: 2px solid var(--vinho);
+    background: #fff; color: var(--vinho); font-family: var(--font-display); font-size: 1.1rem; cursor: pointer; }
+.phone-modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center;
+    justify-content: center; padding: 24px; z-index: 100; }
+.phone-modal.show { display: flex; }
+.phone-modal-box { background: #fff; border: 5px solid var(--vinho); border-radius: 20px; padding: 20px; max-width: 340px; }
+.phone-modal-box h3 { font-family: var(--font-display); font-size: 1.4rem; color: var(--vinho); margin-bottom: 8px; }
+.phone-modal-box p { font-weight: 700; font-size: .9rem; color: var(--ink-soft); line-height: 1.4; }
+.phone-modal-close { margin-top: 14px; width: 100%; font-family: var(--font-display); font-size: 1.2rem;
+    padding: 10px; border-radius: 12px; border: 3px solid var(--vinho); background: #fff; color: var(--vinho); cursor: pointer; }
+
+/* ════════════════════════════════════════
+   MODO TELA — TABULEIRO E FASES DO TELÃO
+   ════════════════════════════════════════ */
+#screen-board-content { width: 100vw; min-height: 100vh; display: flex; flex-direction: column; }
+.screen-center-msg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vh; }
+.screen-big-suit { width: 16vw; height: 16vw; }
+.screen-big-suit svg { width: 100%; height: 100%; }
+.screen-mission-info { text-align: center; margin: 1vh 0 3vh; }
+.smi-label { font-family: var(--font-display); font-size: 2.6vw; letter-spacing: 2px; color: #fff; text-shadow: 0 3px 4px rgba(0,0,0,.4); }
+.smi-lore { font-weight: 800; font-size: 1.3vw; color: var(--ink-soft); margin-top: .5vh; }
+.screen-board-grid { flex: 1; display: flex; flex-direction: column; gap: 2.5vh; align-content: center; padding: 0 4vw 3vh; }
+.screen-card { background: #fff; border: .6vw solid var(--vinho); border-radius: 2vw; padding: 3vh 3vw; box-shadow: 0 1vh 0 rgba(136,19,55,.14); }
+.screen-card-title { font-family: var(--font-display); font-size: 2vw; letter-spacing: 1px; color: var(--vinho); text-align: center; margin-bottom: 2.5vh; }
+.screen-track { display: flex; justify-content: center; gap: 3vw; }
+.screen-track .mission-bubble { width: 9vw !important; height: 9vw !important; }
+.screen-bottom-row { display: grid; grid-template-columns: 1fr 1.4fr; gap: 2vw; align-items: stretch; }
+.screen-rejects { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1.5vh; }
+.screen-rejects-label { font-family: var(--font-display); font-size: 2.4vw; letter-spacing: 2px; color: var(--vinho); }
+.screen-rejects .rdots { display: flex; gap: 1vw; }
+.screen-rejects .rdot { width: 2.2vw; height: 2.2vw; border-radius: 50%; border: .3vw solid var(--vinho); }
+.screen-sheriff { background: var(--accent); border-color: var(--bc); display: flex; align-items: center; justify-content: center; gap: 1.5vw; }
+.screen-star { font-size: 3vw; }
+.screen-sheriff-txt { font-family: var(--font-display); font-size: 2.6vw; letter-spacing: 1px; color: var(--bc); }
+.screen-sheriff-txt b { color: var(--vinho); }
+/* miniatura da trilha reusada */
+.mini-board { background: rgba(255,255,255,.92); border: .4vw solid var(--vinho); border-radius: 1.4vw; padding: 1.5vh 2vw; margin: 0 4vw 3vh; display: flex; align-items: center; justify-content: center; gap: 1.2vw; }
+.mini-board .mb-label { font-family: var(--font-display); font-size: 1.4vw; letter-spacing: 1px; color: var(--vinho); margin-right: 1vw; }
+.mini-track { display: flex; gap: 1.4vw; }
+.mini-track .mission-bubble { width: 4.5vw !important; height: 4.5vw !important; }
+
+/* ════════════════════════════════════════
+   MODO TELA — VOTAÇÃO NO TELÃO
+   ════════════════════════════════════════ */
+.screen-vote-center { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5vw; padding: 0 4vw 3vh; }
+.prop-card { padding: 2.5vh 3vw; }
+.prop-title { font-family: var(--font-display); font-size: 1.7vw; letter-spacing: 1px; color: var(--vinho); text-align: center; margin-bottom: 2vh; }
+.prop-members { display: flex; gap: 2.5vw; }
+.prop-member { display: flex; flex-direction: column; align-items: center; gap: 1vh; }
+.pm-av { width: 7vw; height: 7vw; }
+.pm-av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: .4vw solid var(--law); }
+.pm-name { font-family: var(--font-display); font-size: 1.7vw; letter-spacing: .5px; color: var(--ink); }
+.timer-area { display: flex; flex-direction: column; align-items: center; gap: 1.5vh; }
+.timer-ring { position: relative; width: 16vw; height: 16vw; }
+.timer-ring svg { width: 100%; height: 100%; }
+.timer-ring .time-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 4.5vw; color: var(--vinho); }
+.votes-label { font-family: var(--font-display); font-size: 1.9vw; letter-spacing: 1px; color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,.4); }
+.vote-dots { display: flex; gap: 1.2vw; }
+.vote-dot { width: 2.3vw; height: 2.3vw; border-radius: 50%; background: #fff; border: .35vw solid var(--vinho); opacity: .5; transition: all .3s; }
+.vote-dot.done { background: var(--accent); opacity: 1; box-shadow: 0 0 1.5vw var(--accent); }
+
+/* Cronômetro pequeno no celular */
+.phone-mini-timer { align-self: center; width: fit-content; margin: 8px auto 14px; font-family: var(--font-display);
+    font-size: 1.3rem; letter-spacing: 1px; color: #fff; background: var(--vinho); padding: 4px 18px; border-radius: 999px; }
+
+/* ════════════════════════════════════════
+   MODO TELA — MISSÃO NO TELÃO (suspense)
+   ════════════════════════════════════════ */
+.screen-dust { text-align: center; font-size: 1.2vw; font-weight: 800; color: var(--accent); letter-spacing: 2px; margin-bottom: 3vh; opacity: .85; }
+.screen-mission-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4vh; }
+.screen-agents { display: flex; gap: 5vw; flex-wrap: wrap; justify-content: center; }
+.screen-agent { display: flex; flex-direction: column; align-items: center; gap: 1.5vh; }
+.screen-agent .ag-av { position: relative; width: 10vw; height: 10vw; }
+.screen-agent .ag-av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: .5vw solid var(--accent); filter: brightness(.85); }
+.screen-agent.decided .ag-av img { border-color: #22c55e; filter: brightness(1); }
+.ag-badge { position: absolute; bottom: 0; right: 0; width: 3.2vw; height: 3.2vw; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.8vw; border: .3vw solid #fff; }
+.ag-check { background: #22c55e; color: #fff; }
+.ag-think { background: var(--vinho); color: #fff; animation: pulseThink 1.2s infinite; }
+@keyframes pulseThink { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+.screen-agent .ag-name { font-family: var(--font-display); font-size: 2vw; letter-spacing: .5px; color: #fff; }
+.screen-status-line { font-family: var(--font-display); font-size: 2vw; letter-spacing: 1px; color: #fff; background: var(--vinho); padding: 1.2vh 3vw; border-radius: 999px; box-shadow: 0 .8vh 0 var(--vinho-d); }
+/* fundo mais escuro durante a missão */
+body.is-screen.mission-bg::before { background: linear-gradient(160deg, #c87528, #8a4a14 60%, #5c3008) !important; }
+
+/* ════════════════════════════════════════
+   MODO TELA — RESULTADO DA VOTAÇÃO E DA MISSÃO
+   ════════════════════════════════════════ */
+.screen-vr-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vh; padding: 0 4vw; }
+.screen-vr-title { font-family: var(--font-display); font-size: 5vw; letter-spacing: 2px; text-shadow: 0 4px 6px rgba(0,0,0,.3); }
+.screen-vr-cols { display: flex; gap: 4vw; }
+.vr-col { min-width: 24vw; }
+.vr-head { font-family: var(--font-display); font-size: 2vw; letter-spacing: 1px; text-align: center; margin-bottom: 2vh; }
+.vr-names { display: flex; flex-wrap: wrap; gap: 1vw; justify-content: center; }
+.vr-chip { font-family: var(--font-display); font-size: 1.6vw; letter-spacing: .5px; padding: .6vh 1.5vw; border-radius: 999px; color: #fff; }
+.vr-chip.yes { background: var(--law); }
+.vr-chip.no { background: var(--outlaw); }
+.vr-none { font-family: var(--font-display); font-size: 1.6vw; color: var(--ink-soft); }
+/* Resultado da missão no telão */
+.screen-mr-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4vh; }
+.screen-mr-title { font-family: var(--font-display); font-size: 5.5vw; letter-spacing: 2px; text-shadow: 0 4px 6px rgba(0,0,0,.3); }
+.screen-mr-sabotage { display: flex; flex-direction: column; align-items: center; gap: 1vh; }
+.mr-sab-num { font-family: var(--font-display); font-size: 8vw; line-height: 1; }
+.mr-sab-label { font-family: var(--font-display); font-size: 2.2vw; letter-spacing: 1px; color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,.4); }
+
+/* ════════════════════════════════════════
+   MODO TELA — FIM DE JOGO E ADIVINHAÇÃO DO CHEFE
+   ════════════════════════════════════════ */
+.screen-boss-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.5vh; }
+.screen-boss-icon { width: 14vw; height: 14vw; animation: bossPulse 1.5s infinite; }
+.screen-boss-icon svg { width: 100%; height: 100%; }
+@keyframes bossPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.screen-gameover { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; padding: 2vh 4vw 3vh; overflow-y: auto; }
+.sgo-title { font-family: var(--font-display); font-size: 5vw; letter-spacing: 2px; text-shadow: 0 4px 6px rgba(0,0,0,.3); }
+.sgo-reason { font-weight: 800; font-size: 1.4vw; color: var(--ink-soft); text-align: center; }
+.sgo-cols { display: flex; gap: 3vw; width: 100%; justify-content: center; }
+.sgo-col { flex: 1; max-width: 38vw; display: flex; flex-direction: column; gap: 1.2vh; }
+.sgo-head { font-family: var(--font-display); font-size: 1.8vw; letter-spacing: 1px; text-align: center; margin-bottom: 1vh; }
+.sgo-row { display: flex; align-items: center; gap: 1.2vw; background: #fff; border: .3vw solid #e8d5c0; border-radius: 1.2vw; padding: 1vh 1.5vw; }
+.sgo-row.law { border-color: #bcd0f5; } .sgo-row.outlaw { border-color: #f5c4c4; }
+.sgo-av { width: 4vw; height: 4vw; flex-shrink: 0; }
+.sgo-av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: .25vw solid var(--vinho); }
+.sgo-row.law .sgo-av img { border-color: var(--law); } .sgo-row.outlaw .sgo-av img { border-color: var(--outlaw); }
+.sgo-name { flex: 1; font-family: var(--font-display); font-size: 1.5vw; letter-spacing: .5px; color: var(--ink); }
+.sgo-tag { font-family: var(--font-display); font-size: 1vw; letter-spacing: .5px; color: var(--vinho); }
+.sgo-suit { width: 2.5vw; height: 2.5vw; flex-shrink: 0; }
+.sgo-suit svg { width: 100%; height: 100%; }
+#btn-screen-newgame { font-size: 2vw; padding: 1.5vh 4vw; margin-top: 2vh; }
+
+/* Tela "veja o telão" no celular */
+.phone-watch-big { font-size: 5rem; animation: bossPulse 1.5s infinite; }
+
+/* ════════════════════════════════════════
+   MODO TELA — DUELO E CRONÔMETRO DO XERIFE
+   ════════════════════════════════════════ */
+.screen-board-timer { font-family: var(--font-display); font-size: 2.2vw; letter-spacing: 1px; color: #fff; background: var(--vinho); padding: .6vh 2vw; border-radius: 999px; box-shadow: 0 4px 0 var(--vinho-d); }
+.screen-duel-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.5vh; }
+.screen-duel-icon { width: 12vw; height: 12vw; display: flex; align-items: center; justify-content: center; font-size: 8vw; animation: duelShake 2s infinite; }
+.screen-duel-icon img { width: 100%; height: 100%; object-fit: contain; }
+@keyframes duelShake { 0%,90%,100% { transform: rotate(0); } 93% { transform: rotate(-8deg); } 96% { transform: rotate(8deg); } }
+.screen-duel-faceoff { display: flex; align-items: center; gap: 3vw; margin-bottom: 1vh; }
+.screen-duel-faceoff .duel-name { font-family: var(--font-display); font-size: 2.8vw; letter-spacing: 1px; color: #fff; text-shadow: 0 3px 4px rgba(0,0,0,.4); }
+
+/* ════════════════════════════════════════
+   MODO PARTY — card de ativação nas configurações da sala
+   ════════════════════════════════════════ */
+.party-toggle-card { background: linear-gradient(135deg, #2a1a4a, #4a1a3a); border: 2px solid var(--accent); }
+.party-toggle-card .mode-card { background: transparent; }
+.party-toggle-card .rule-title { color: var(--accent); }
+.party-toggle-card .rule-sub { color: #e8d5f0; }
+.party-toggle-card .custom-checkbox { border-color: var(--accent); }
+.party-toggle-card .custom-checkbox.checked-visual { background: var(--accent); border-color: var(--accent); }
+.party-toggle-card .info-btn { border-color: var(--accent); color: var(--accent); }
+
+/* ════════════════════════════════════════
+   MODO PARTY — QR code no lobby do telão
+   ════════════════════════════════════════ */
+.tela-join-row { display: flex; align-items: center; justify-content: center; gap: 4vw; padding: 0 4vw; margin-bottom: 3vh; flex-wrap: wrap; }
+.tela-qr-box { display: flex; flex-direction: column; align-items: center; gap: 1vh; background: #fff; border: .5vw solid var(--vinho); border-radius: 1.5vw; padding: 1.5vw; box-shadow: 0 1vh 0 rgba(136,19,55,.14); }
+#screen-qrcode { width: 16vw; height: 16vw; }
+#screen-qrcode img { image-rendering: pixelated; }
+.tela-qr-label { font-family: var(--font-display); font-size: 1.2vw; letter-spacing: 1px; color: var(--vinho); }
+.tela-join-row .tela-lobby-players { margin-bottom: 0; flex: 1; }

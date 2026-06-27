@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Saloon</title>
+    <title>Saloon Party</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -13,7 +13,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="images/icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Saloon">
+    <meta name="apple-mobile-web-app-title" content="Saloon Party">
     <script>
         if (!localStorage.getItem('game_reset_v5')) {
             localStorage.clear();
@@ -67,7 +67,7 @@
 
     <!-- Header legado (oculto) -->
     <header id="main-header" class="hidden">
-        <h1 class="logo-text">Saloon</h1>
+        <h1 class="logo-text">Saloon<br><span style="font-size:0.5em;letter-spacing:6px;">PARTY</span></h1>
     </header>
 
     <!-- ============================================
@@ -446,8 +446,70 @@
             </div>
         </div>
 
+        <!-- MODO PARTY: só o host vê. Ao ligar, este dispositivo vira a "tela". -->
+        <div class="card party-toggle-card hidden" id="online-card-party-wrap" style="margin-top:10px;">
+            <div class="mode-card" id="online-card-party" style="box-shadow:none;">
+                <div class="card-check-container">
+                    <span id="online-chk-party" class="custom-checkbox"></span>
+                </div>
+                <div class="card-icon-container" style="width:38px;height:38px;font-size:26px;">📺</div>
+                <div class="card-content">
+                    <span class="rule-title" data-i18n="party_mode_title">Modo Party</span>
+                    <span class="rule-sub" data-i18n="party_mode_sub">Este aparelho vira a tela. Jogadores entram pelo celular.</span>
+                </div>
+                <div class="info-btn" onclick="event.stopPropagation();showTutorial('PARTY')">i</div>
+            </div>
+        </div>
+
         <button id="btn-start-online-game" class="btn btn-neon-red lg mt-4 hidden">Iniciar partida!</button>
         <button id="btn-leave-room" class="btn btn-ghost mt-2" data-i18n="leave_room">Sair da sala</button>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         MODO TELA — LOBBY DO TELÃO
+         ══════════════════════════════════════ -->
+    <section id="screen-screen-lobby" class="screen screen-tela">
+        <div class="tela-top">
+            <div class="tela-brand">★ SALOON ★</div>
+            <div class="tela-code">SALA <span id="screen-room-code">----</span></div>
+        </div>
+        <h1 class="tela-h1" data-i18n="screen_join_title">Entrem pelo celular</h1>
+        <p class="tela-sub" data-i18n="screen_join_sub_qr">Escaneiem o QR code ou entrem com o código da sala.</p>
+        <div class="tela-join-row">
+            <div class="tela-qr-box">
+                <div id="screen-qrcode"></div>
+                <span class="tela-qr-label" data-i18n="screen_scan_to_join">Aponte a câmera</span>
+            </div>
+            <div class="tela-lobby-players" id="screen-lobby-players"></div>
+        </div>
+        <div class="tela-expansions" id="screen-lobby-expansions"></div>
+        <div class="tela-bottom">
+            <button id="btn-screen-start" class="btn btn-neon-red lg hidden" data-i18n="screen_start">Começar a partida</button>
+            <p id="screen-min-players" class="tela-hint" data-i18n="screen_need_players">Aguardando jogadores (mínimo 5)</p>
+            <button id="btn-screen-leave" class="btn btn-ghost mt-2" data-i18n="leave_room">Encerrar sala</button>
+        </div>
+    </section>
+
+    <!-- MODO TELA — TABULEIRO DO TELÃO (genérico, conteúdo dinâmico) -->
+    <section id="screen-screen-board" class="screen screen-tela">
+        <div id="screen-board-content"></div>
+    </section>
+
+    <!-- MODO TELA — RESUMO DO CELULAR (fora da vez) -->
+    <section id="screen-phone-summary" class="screen">
+        <div class="phone-summary-head">
+            <h2 class="eyebrow" data-i18n="phone_summary_eyebrow">A mesa de Red Rock</h2>
+            <p class="phone-watch-hint" data-i18n="phone_watch_hint">👁 Acompanhe pelo telão. Seu celular avisa quando for sua vez.</p>
+        </div>
+        <div class="roles-grid" id="phone-roles-grid"></div>
+        <button id="btn-phone-review-card" class="btn btn-primary lg mt-2" data-i18n="phone_review_card">Rever minha carta</button>
+    </section>
+
+    <!-- MODO TELA — TELA "VEJA O TELÃO" (fim de jogo / momentos no telão) -->
+    <section id="screen-phone-watch" class="screen" style="justify-content:center;align-items:center;text-align:center;gap:18px;">
+        <div class="phone-watch-big">👁</div>
+        <h1 id="phone-watch-title" class="display" style="font-size:2.2rem;">—</h1>
+        <p id="phone-watch-sub" class="lore-text" style="font-size:1.1rem;padding:0 24px;">—</p>
     </section>
 
     <!-- ══════════════════════════════════════
@@ -677,6 +739,8 @@
 <script src="i18n.js"></script>
 <script src="art.js"></script>
 <script src="fx.js"></script>
+<script src="qrcode.js"></script>
 <script src="app.js"></script>
+<script src="screen.js"></script>
 </body>
 </html>

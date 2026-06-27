@@ -1,7 +1,7 @@
 // Smoke test 2 — extras (Delegado/Chefe + Revólver): duelo, chefe e fim de jogo
 const { JSDOM } = require('jsdom');
 const fs = require('fs');
-const path = '/home/claude/saloon-redesign/';
+const path = '/home/claude/saloon-unified/';
 
 let html = fs.readFileSync(path + 'index.html', 'utf8');
 html = html.replace(/<script src="https:[^>]+><\/script>/g, '');

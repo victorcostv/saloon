@@ -1,6 +1,6 @@
 const { JSDOM } = require('jsdom');
 const fs = require('fs');
-const path = '/home/claude/saloon-redesign/';
+const path = '/home/claude/saloon-unified/';
 let html = fs.readFileSync(path+'index.html','utf8').replace(/<script src="https:[^>]+><\/script>/g,'').replace(/<link href="https:[^>]+>/g,'');
 const dom = new JSDOM(html,{runScripts:'outside-only',pretendToBeVisual:true,url:'https://x.test/'});
 const { window } = dom; const { document } = window;

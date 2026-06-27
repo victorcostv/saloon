@@ -1,7 +1,7 @@
 // Smoke test do Saloon redesign — fluxo offline completo via jsdom
 const { JSDOM } = require('jsdom');
 const fs = require('fs');
-const path = '/home/claude/saloon-redesign/';
+const path = '/home/claude/saloon-unified/';
 
 let html = fs.readFileSync(path + 'index.html', 'utf8');
 // Remove scripts externos (fonts/firebase) para o jsdom

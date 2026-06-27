@@ -24,6 +24,19 @@ const missionLore = (i) => I18N[LANG].missions_lore[i];
 // ESTADO DO JOGO (OFFLINE)
 // ============================================
 
+
+// ============================================
+// INTEGRAÇÃO TUYA — LÂMPADA INTELIGENTE
+// ============================================
+const TUYA_WORKER = 'https://ancient-dream-9c02.victorcostv.workers.dev';
+function setLight(color) {
+    try {
+        if (typeof fetch === 'function') {
+            fetch(`${TUYA_WORKER}/?color=${color}`).catch(() => {});
+        }
+    } catch (e) { /* luz é opcional, nunca interrompe o jogo */ }
+}
+
 const state = {
     players: [], // { name, role: 'LAW'|'OUTLAW', isDelegado: bool, isBoss: bool }
     config: null,
@@ -64,6 +77,10 @@ const state = {
 
 let onlineProfile = { name: '', avatar: '' };
 let currentRoom = null;
+// MODO TELA: true se este dispositivo criou a sala (é o telão, não joga)
+let isScreenDevice = false;
+// Cronômetro do modo tela (referência para limpar)
+let screenTimerInterval = null;
 
 // ============================================
 // MENU LATERAL
@@ -307,11 +324,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showScreen('screen-splash');
 
+    // ---- Link direto de sala: saloongame.com.br/#CODIGO ----
+    // Se a URL tem um código no hash, guarda para entrar direto após o perfil.
+    let pendingRoomCode = null;
+    const hashCode = (location.hash || '').replace('#', '').trim().toUpperCase();
+    if (hashCode && /^[A-Z0-9]{4,8}$/.test(hashCode)) {
+        pendingRoomCode = hashCode;
+    }
+    window.getPendingRoomCode = () => pendingRoomCode;
+    window.clearPendingRoomCode = () => { pendingRoomCode = null; };
+
     // ---- Splash: primeiro toque inicia BGM e mostra o menu ----
     document.getElementById('screen-splash').onclick = () => {
         AudioManager.startBGM();
         showHamburger();
-        showScreen('screen-mode-select');
+        setLight('orange');
+        // Se veio por um link de sala, vai direto para o perfil (e depois entra na sala)
+        if (pendingRoomCode) {
+            showScreen('screen-online-profile');
+        } else {
+            showScreen('screen-mode-select');
+        }
     };
 
     // ---- Navegação de telas ----
@@ -357,7 +390,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const nameInput = document.getElementById('online-name-input').value.trim();
         if (!nameInput) return alert(t('fill_name'));
         onlineProfile.name = nameInput;
-        showScreen('screen-online-lobby');
+        // Se veio por um link de sala (#CODIGO), entra direto nela
+        const pending = window.getPendingRoomCode && window.getPendingRoomCode();
+        if (pending) {
+            window.clearPendingRoomCode();
+            joinRoomByCode(pending);
+        } else {
+            showScreen('screen-online-lobby');
+        }
     };
 
     // ---- Criar Sala ----
@@ -365,9 +405,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-create-room').onclick = () => {
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
         const roomRef = db.ref('rooms/' + code);
+        isScreenDevice = false; // sala normal; o modo Party é ligado nas configurações
         roomRef.set({
             host: onlineProfile.name,
             hostAvatar: onlineProfile.avatar,
+            screenMode: false,
             players: {
                 [onlineProfile.name]: {
                     name: onlineProfile.name,
@@ -376,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             },
             status: 'waiting',
-            extras: { roles: false, revolver: false }
+            extras: { roles: false, revolver: false, farsante: false }
         }).then(() => {
             currentRoom = code;
             showScreen('screen-online-waiting');
@@ -389,22 +431,29 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-join-room').onclick = () => {
         const code = document.getElementById('room-code-input').value.trim().toUpperCase();
         if (!code) return alert(t('type_code'));
-        db.ref('rooms/' + code).once('value').then(snapshot => {
-            if (!snapshot.exists()) return alert(t('room_not_found'));
-            const room = snapshot.val();
-            if (room.status !== 'waiting') return alert(t('match_started'));
-            db.ref('rooms/' + code + '/players/' + onlineProfile.name).set({
-                name: onlineProfile.name,
-                avatar: onlineProfile.avatar,
-                isHost: false
-            }).then(() => {
-                currentRoom = code;
-                showScreen('screen-online-waiting');
-                listenToRoom(code);
-            });
-        });
+        joinRoomByCode(code);
     };
 });
+
+// Entra numa sala pelo código (usado pelo botão e pelo link/QR de sala)
+function joinRoomByCode(code) {
+    code = (code || '').trim().toUpperCase();
+    if (!code) return;
+    db.ref('rooms/' + code).once('value').then(snapshot => {
+        if (!snapshot.exists()) return alert(t('room_not_found'));
+        const room = snapshot.val();
+        if (room.status !== 'waiting') return alert(t('match_started'));
+        db.ref('rooms/' + code + '/players/' + onlineProfile.name).set({
+            name: onlineProfile.name,
+            avatar: onlineProfile.avatar,
+            isHost: false
+        }).then(() => {
+            currentRoom = code;
+            showScreen('screen-online-waiting');
+            listenToRoom(code);
+        });
+    });
+}
 
 // ============================================
 // LIMPEZA DE SALA
@@ -825,6 +874,7 @@ function processMission() {
     const missionSuccess = sabotages < failsRequired;
     state.missionResults[state.currentMissionIndex] = missionSuccess;
     state._justResolvedMission = state.currentMissionIndex;
+    setTimeout(() => setLight(missionSuccess ? 'blue' : 'red'), 900);
 
     playMissionResult({
         rowId: 'result-chip-row',
@@ -847,6 +897,8 @@ function processMission() {
                 return endGame(t('win_outlaw_missions'), "OUTLAW");
             }
 
+            // volta ao neutro entre missões
+            setLight('orange');
             if ((state.currentMissionIndex === 1 || state.currentMissionIndex === 2) && state.extras.revolver) {
                 startDuelChoosePhase();
             } else {
@@ -1035,9 +1087,11 @@ function endGame(reason, winner) {
     if (winner === 'LAW') {
         AudioManager.playSFX('success');
         document.body.classList.add('bg-winner-law');
+        setLight('blue');
     } else if (winner === 'OUTLAW') {
         AudioManager.playSFX('fail');
         document.body.classList.add('bg-winner-outlaw');
+        setLight('red');
     }
 
     const lawUl = document.getElementById('final-law-list');
@@ -1191,6 +1245,28 @@ function listenToRoom(code) {
         const farsCard = document.getElementById('online-card-farsante');
         if (farsCard) farsCard.classList.toggle('disabled-card', !extras.roles);
     });
+
+    // MODO PARTY: card visível só para o host; sincroniza o visual do checkbox
+    db.ref('rooms/' + code + '/players').on('value', snap => {
+        const players = snap.val() || {};
+        const me = players[onlineProfile.name];
+        const partyWrap = document.getElementById('online-card-party-wrap');
+        if (partyWrap) partyWrap.classList.toggle('hidden', !(me && me.isHost));
+    });
+    db.ref('rooms/' + code + '/screenMode').on('value', snap => {
+        const on = !!snap.val();
+        const chkParty = document.getElementById('online-chk-party');
+        if (chkParty) chkParty.classList.toggle('checked-visual', on);
+    });
+    // Host liga o Modo Party (transição para a tela; para voltar, encerra a sala)
+    document.getElementById('online-card-party').onclick = () => {
+        db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
+            if (!(snap.val() && snap.val().isHost)) return;
+            db.ref('rooms/' + code + '/screenMode').once('value').then(s => {
+                if (!s.val()) enabledPartyAsHost(code);
+            });
+        });
+    };
 
     // Extras: somente host pode alterar
     document.getElementById('online-card-roles').onclick = () => {
@@ -1408,6 +1484,7 @@ function showOnlineRoleReveal(code) {
             );
 
             Promise.all(extraFetches).then(() => {
+                myRoleData = roleData; // guarda para "Rever minha carta" no modo tela
                 runCardScene({
                     card:    'online-reveal-card',
                     inner:   'online-reveal-card-inner',
@@ -1564,6 +1641,11 @@ function showOnlineBoard(code) {
             document.getElementById('online-sheriff-instruction').innerText =
                 t('sheriff_pick_online', { size: missionSize });
 
+            // MODO TELA: cronômetro pequeno no topo (sincronizado com o telão)
+            if (room.screenMode) {
+                showPhonePickTimer(code);
+            }
+
             const teamList = document.getElementById('online-team-select-list');
             teamList.innerHTML = '';
             let selectedTeam = [];
@@ -1590,9 +1672,15 @@ function showOnlineBoard(code) {
             document.getElementById('online-btn-propose').disabled = true;
             document.getElementById('online-btn-propose').onclick = () => {
                 db.ref('rooms/' + code + '/proposedTeam').set(selectedTeam);
+                db.ref('rooms/' + code + '/pickEndTime').set(null);
                 db.ref('rooms/' + code + '/status').set('voting');
             };
         } else {
+            // MODO TELA: jogador fora da vez vê o resumo dos papéis (não a espera padrão)
+            if (room.screenMode) {
+                showPhoneSummary(code);
+                return;
+            }
             document.getElementById('online-sheriff-area').classList.add('hidden');
             document.getElementById('online-waiting-area').classList.remove('hidden');
             document.getElementById('online-waiting-text').innerText =
@@ -1607,6 +1695,9 @@ function showOnlineBoard(code) {
 
 function showOnlineVoting(code, team, sheriffName, playerCount) {
     showScreen('screen-online-voting');
+
+    // MODO TELA: detecta se a sala usa telão (o celular não resolve a votação)
+    const screenMode = !isScreenDevice; // num celular, screenMode da sala é tratado abaixo
 
     const teamList = document.getElementById('online-voting-team');
     teamList.innerHTML = '';
@@ -1636,21 +1727,36 @@ function showOnlineVoting(code, team, sheriffName, playerCount) {
         newNo.onclick  = () => registerVote('no');
     }
 
-    // Ouvir votos
-    db.ref('rooms/' + code + '/votes').off();
-    db.ref('rooms/' + code + '/votes').on('value', votesSnap => {
-        const votes = votesSnap.val() || {};
-        const count = Object.keys(votes).length;
-        document.getElementById('online-votes-count').innerText =
-            t('votes_count', { count, total: playerCount });
-
-        if (count >= playerCount) {
-            db.ref('rooms/' + code + '/votes').off();
-            const yesVotes = Object.values(votes).filter(v => v === 'yes').length;
-            const majority = Math.floor(playerCount / 2) + 1;
-            const approved = yesVotes >= majority;
-            setTimeout(() => showOnlineVoteResult(code, votes, approved, team, playerCount), 800);
+    // No modo tela, o cronômetro pequeno aparece no celular (sincronizado com o telão)
+    db.ref('rooms/' + code).once('value').then(rSnap => {
+        const room = rSnap.val() || {};
+        if (room.screenMode) {
+            showPhoneMiniTimer(code);
+            // oculta o contador de votos no celular (a contagem aparece no telão)
+            const vc = document.getElementById('online-votes-count');
+            if (vc) vc.style.display = 'none';
+            // O celular NÃO resolve a votação nem mostra o resultado:
+            // ele apenas escuta o status mudar (o telão resolve e muda o status).
+            return;
         }
+        // modo online normal: garante o contador visível
+        const vc = document.getElementById('online-votes-count');
+        if (vc) vc.style.display = '';
+        // Modo online normal: cada celular conta e resolve (comportamento original)
+        db.ref('rooms/' + code + '/votes').off();
+        db.ref('rooms/' + code + '/votes').on('value', votesSnap => {
+            const votes = votesSnap.val() || {};
+            const count = Object.keys(votes).length;
+            document.getElementById('online-votes-count').innerText =
+                t('votes_count', { count, total: playerCount });
+            if (count >= playerCount) {
+                db.ref('rooms/' + code + '/votes').off();
+                const yesVotes = Object.values(votes).filter(v => v === 'yes').length;
+                const majority = Math.floor(playerCount / 2) + 1;
+                const approved = yesVotes >= majority;
+                setTimeout(() => showOnlineVoteResult(code, votes, approved, team, playerCount), 800);
+            }
+        });
     });
 }
 
@@ -1724,57 +1830,74 @@ function showOnlineVoteResult(code, votes, approved, team, playerCount) {
 
 function showOnlineMission(code, team) {
     const isInTeam = team && team.includes(onlineProfile.name);
-    showScreen('screen-online-mission');
 
-    if (isInTeam) {
-        document.getElementById('online-mission-action-area').classList.remove('hidden');
-        document.getElementById('online-mission-waiting-area').classList.add('hidden');
-        document.getElementById('online-mission-player').innerText = onlineProfile.name;
-        document.getElementById('online-mission-after').style.opacity = '0';
-
-        db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
-            const isLaw = snap.val() && snap.val().role === 'LAW';
-            renderChipTable({
-                rowId: 'online-mission-chip-row',
-                warnId: 'online-law-warning',
-                confirmId: 'online-mission-confirm',
-                nextBtnId: 'online-btn-mission-next-hidden', // não usamos botão aqui
-                isLaw: isLaw,
-                onChoice: (isSuccess) => {
-                    db.ref('rooms/' + code + '/missionChoices/' + onlineProfile.name)
-                      .set(isSuccess ? 'success' : 'sabotage');
-                    // após escolher, mostra "aguardando os outros"
-                    setTimeout(() => {
-                        document.getElementById('online-mission-after').style.opacity = '1';
-                        document.getElementById('online-mission-after').innerText = t('choice_registered');
-                    }, REDUCED_MOTION ? 0 : 1100);
-                },
-                onNext: () => {} // sem avanço manual no online
-            });
+    // MODO TELA: quem não está na missão acompanha pelo resumo/telão
+    if (!isInTeam) {
+        let handledByScreen = false;
+        // checagem síncrona via snapshot
+        db.ref('rooms/' + code).once('value').then(rSnap => {
+            const room = rSnap.val() || {};
+            if (room.screenMode) {
+                showPhoneSummary(code);
+            } else {
+                showScreen('screen-online-mission');
+                document.getElementById('online-mission-action-area').classList.add('hidden');
+                document.getElementById('online-mission-waiting-area').classList.remove('hidden');
+                document.getElementById('online-mission-waiting-text').innerText = t('waiting_mission_result');
+            }
         });
-    } else {
-        document.getElementById('online-mission-action-area').classList.add('hidden');
-        document.getElementById('online-mission-waiting-area').classList.remove('hidden');
-        document.getElementById('online-mission-waiting-text').innerText = t('waiting_mission_result');
+        return;
     }
 
-    // Quando todos da equipe escolheram, o xerife processa
-    db.ref('rooms/' + code + '/missionChoices').off();
-    db.ref('rooms/' + code + '/missionChoices').on('value', choicesSnap => {
-        const choices = choicesSnap.val() || {};
-        if (team && Object.keys(choices).length >= team.length) {
-            db.ref('rooms/' + code + '/missionChoices').off();
-            db.ref('rooms/' + code + '/currentSheriffName').once('value').then(sheriffSnap => {
-                if (sheriffSnap.val() === onlineProfile.name) {
-                    const sabotages = Object.values(choices).filter(c => c === 'sabotage').length;
-                    db.ref('rooms/' + code + '/currentMissionIndex').once('value').then(mSnap => {
-                        const mIdx = mSnap.val() || 0;
-                        db.ref('rooms/' + code + '/missionResult').set({ sabotages, missionIndex: mIdx, total: team.length });
-                        db.ref('rooms/' + code + '/status').set('missionResult');
-                    });
-                }
-            });
-        }
+    showScreen('screen-online-mission');
+    document.getElementById('online-mission-action-area').classList.remove('hidden');
+    document.getElementById('online-mission-waiting-area').classList.add('hidden');
+    document.getElementById('online-mission-player').innerText = onlineProfile.name;
+    document.getElementById('online-mission-after').style.opacity = '0';
+
+    db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
+        const isLaw = snap.val() && snap.val().role === 'LAW';
+        renderChipTable({
+            rowId: 'online-mission-chip-row',
+            warnId: 'online-law-warning',
+            confirmId: 'online-mission-confirm',
+            nextBtnId: 'online-btn-mission-next-hidden',
+            isLaw: isLaw,
+            onChoice: (isSuccess) => {
+                db.ref('rooms/' + code + '/missionChoices/' + onlineProfile.name)
+                  .set(isSuccess ? 'success' : 'sabotage');
+                setTimeout(() => {
+                    document.getElementById('online-mission-after').style.opacity = '1';
+                    document.getElementById('online-mission-after').innerText = t('choice_registered');
+                }, REDUCED_MOTION ? 0 : 1100);
+            },
+            onNext: () => {}
+        });
+    });
+
+    // Quando todos da equipe escolheram, processa o resultado.
+    // MODO TELA: quem processa é o telão (não o celular do xerife).
+    db.ref('rooms/' + code).once('value').then(rSnap => {
+        const room = rSnap.val() || {};
+        if (room.screenMode) return; // no modo tela, o telão é o juiz
+
+        db.ref('rooms/' + code + '/missionChoices').off();
+        db.ref('rooms/' + code + '/missionChoices').on('value', choicesSnap => {
+            const choices = choicesSnap.val() || {};
+            if (team && Object.keys(choices).length >= team.length) {
+                db.ref('rooms/' + code + '/missionChoices').off();
+                db.ref('rooms/' + code + '/currentSheriffName').once('value').then(sheriffSnap => {
+                    if (sheriffSnap.val() === onlineProfile.name) {
+                        const sabotages = Object.values(choices).filter(c => c === 'sabotage').length;
+                        db.ref('rooms/' + code + '/currentMissionIndex').once('value').then(mSnap => {
+                            const mIdx = mSnap.val() || 0;
+                            db.ref('rooms/' + code + '/missionResult').set({ sabotages, missionIndex: mIdx, total: team.length });
+                            db.ref('rooms/' + code + '/status').set('missionResult');
+                        });
+                    }
+                });
+            }
+        });
     });
 }
 
@@ -1783,6 +1906,18 @@ function showOnlineMission(code, team) {
 // ============================================
 
 function showOnlineMissionResult(code, result) {
+    // MODO TELA: o resultado aparece no telão. O celular volta ao resumo.
+    db.ref('rooms/' + code).once('value').then(rSnap => {
+        const room = rSnap.val() || {};
+        if (room.screenMode) {
+            showPhoneSummary(code);
+            return;
+        }
+        showMissionResultNormal(code, result);
+    });
+}
+
+function showMissionResultNormal(code, result) {
     showScreen('screen-online-mission-result');
     const sabotages  = result.sabotages;
     const missionIdx = result.missionIndex || 0;
@@ -1793,6 +1928,7 @@ function showOnlineMissionResult(code, result) {
         const failsRequired  = config.twoFailsRequired === missionIdx ? 2 : 1;
         const missionSuccess = sabotages < failsRequired;
         const total = result.total || config.missions[missionIdx];
+        setTimeout(() => setLight(missionSuccess ? 'blue' : 'red'), 900);
 
         const waitEl = document.getElementById('online-mission-result-waiting');
         waitEl.classList.add('hidden'); // só reaparece após a animação, p/ não-xerife
@@ -1833,6 +1969,8 @@ function showOnlineMissionResult(code, result) {
                     } else if (winsOutlaw >= 3) {
                         updates['status'] = 'gameover_outlaw_missions';
                     } else {
+                        // jogo continua: volta ao estado neutro
+                        setLight('orange');
                         updates['currentMissionIndex'] = missionIdx + 1;
                         if ((missionIdx === 1 || missionIdx === 2) && room.extras && room.extras.revolver && room.revolverOwnerName) {
                             updates['status'] = 'duel_choose';
@@ -1924,8 +2062,17 @@ function showOnlineDuelChoose(code) {
                 });
             };
         } else {
-            document.getElementById('online-duel-owner-area').classList.add('hidden');
-            document.getElementById('online-duel-waiting-area').classList.remove('hidden');
+            // MODO TELA: quem não tem o revólver acompanha pelo telão
+            if (room.screenMode) {
+                showScreen('screen-phone-watch');
+                const wt = document.getElementById('phone-watch-title');
+                const ws = document.getElementById('phone-watch-sub');
+                if (wt) { wt.innerText = t('phone_duel_title'); wt.style.color = 'var(--accent)'; }
+                if (ws) ws.innerText = t('phone_duel_sub');
+            } else {
+                document.getElementById('online-duel-owner-area').classList.add('hidden');
+                document.getElementById('online-duel-waiting-area').classList.remove('hidden');
+            }
         }
 
         // Listener para quando o status mudar
@@ -2134,8 +2281,20 @@ function showOnlineBossAssassination(code) {
                 });
             };
         } else {
-            document.getElementById('online-boss-action-area').classList.add('hidden');
-            document.getElementById('online-boss-waiting-area').classList.remove('hidden');
+            // MODO TELA: quem não é o Chefe vê a tela de "olhe o telão"
+            db.ref('rooms/' + code).once('value').then(rSnap => {
+                const room = rSnap.val() || {};
+                if (room.screenMode) {
+                    showScreen('screen-phone-watch');
+                    const wt = document.getElementById('phone-watch-title');
+                    const ws = document.getElementById('phone-watch-sub');
+                    if (wt) { wt.innerText = t('phone_boss_aiming_title'); wt.style.color = 'var(--outlaw)'; }
+                    if (ws) ws.innerText = t('phone_boss_aiming_sub');
+                    return;
+                }
+                document.getElementById('online-boss-action-area').classList.add('hidden');
+                document.getElementById('online-boss-waiting-area').classList.remove('hidden');
+            });
         }
     });
 }
@@ -2146,6 +2305,20 @@ function showOnlineBossAssassination(code) {
 
 function showOnlineGameOver(code, room, winner, reason) {
     db.ref('rooms/' + code + '/status').off();
+
+    // MODO TELA: o resultado completo (papéis revelados) aparece no telão.
+    // O celular mostra uma tela simples apontando para o telão.
+    if (room && room.screenMode && !isScreenDevice) {
+        showScreen('screen-phone-watch');
+        const wt = document.getElementById('phone-watch-title');
+        const ws = document.getElementById('phone-watch-sub');
+        const winnerIsLaw = winner === 'LAW';
+        if (wt) wt.innerText = winnerIsLaw ? t('law_wins') : t('outlaw_wins');
+        if (wt) wt.style.color = winnerIsLaw ? 'var(--law)' : 'var(--outlaw)';
+        if (ws) ws.innerText = t('phone_watch_screen_result');
+        return;
+    }
+
     showScreen('screen-online-game-over');
 
     document.getElementById('online-game-over-reason').innerText = reason;
@@ -2154,9 +2327,11 @@ function showOnlineGameOver(code, room, winner, reason) {
     if (winner === 'LAW') {
         AudioManager.playSFX('success');
         document.body.classList.add('bg-winner-law');
+        setLight('blue');
     } else {
         AudioManager.playSFX('fail');
         document.body.classList.add('bg-winner-outlaw');
+        setLight('red');
     }
 
     const players = room.players ? Object.values(room.players) : [];
