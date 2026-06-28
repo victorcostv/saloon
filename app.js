@@ -322,10 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, true);
 
-    showScreen('screen-splash');
-
     // ---- Link direto de sala: saloongame.com.br/#CODIGO ----
-    // Se a URL tem um código no hash, guarda para entrar direto após o perfil.
+    // Se a URL tem um código no hash, guarda para entrar direto na sala.
     let pendingRoomCode = null;
     const hashCode = (location.hash || '').replace('#', '').trim().toUpperCase();
     if (hashCode && /^[A-Z0-9]{4,8}$/.test(hashCode)) {
@@ -334,17 +332,21 @@ document.addEventListener('DOMContentLoaded', () => {
     window.getPendingRoomCode = () => pendingRoomCode;
     window.clearPendingRoomCode = () => { pendingRoomCode = null; };
 
+    // Se veio por um link de sala (QR code), pula o splash e vai direto à escolha
+    // de foto/nome. O áudio inicia quando a pessoa confirma o perfil.
+    if (pendingRoomCode) {
+        showHamburger();
+        showScreen('screen-online-profile');
+    } else {
+        showScreen('screen-splash');
+    }
+
     // ---- Splash: primeiro toque inicia BGM e mostra o menu ----
     document.getElementById('screen-splash').onclick = () => {
         AudioManager.startBGM();
         showHamburger();
         setLight('orange');
-        // Se veio por um link de sala, vai direto para o perfil (e depois entra na sala)
-        if (pendingRoomCode) {
-            showScreen('screen-online-profile');
-        } else {
-            showScreen('screen-mode-select');
-        }
+        showScreen('screen-mode-select');
     };
 
     // ---- Navegação de telas ----
@@ -390,6 +392,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const nameInput = document.getElementById('online-name-input').value.trim();
         if (!nameInput) return alert(t('fill_name'));
         onlineProfile.name = nameInput;
+        // Garante que o áudio comece (se a pessoa veio direto pelo QR, sem passar pelo splash)
+        AudioManager.startBGM();
+        setLight('orange');
         // Se veio por um link de sala (#CODIGO), entra direto nela
         const pending = window.getPendingRoomCode && window.getPendingRoomCode();
         if (pending) {

@@ -385,15 +385,50 @@ function routeScreenStatus(code, status) {
 function renderScreenRevealing(room) {
     const content = document.getElementById('screen-board-content');
     showScreen('screen-screen-board');
+
+    // calcula a composição da mesa e separa por time
+    const players = room.players ? Object.values(room.players) : [];
+    const blocks = composicaoDaMesa(players.length, room.extras || {});
+
+    // agrupa por papel mantendo a ordem e contando as quantidades
+    const order = ['LAW', 'DELEGADO', 'ESCRIVAO', 'OUTLAW', 'BOSS', 'FALSIFICADOR'];
+    const counts = {};
+    blocks.forEach(k => { counts[k] = (counts[k] || 0) + 1; });
+
+    function compRow(suitKey) {
+        if (!counts[suitKey]) return '';
+        const info = papelInfo(suitKey);
+        const cor = info.team === 'law' ? 'var(--law)' : 'var(--outlaw)';
+        return `<div class="comp-row">
+            <div class="comp-suit">${suitSVG(suitKey)}</div>
+            <span class="comp-qtd">${counts[suitKey]}×</span>
+            <span class="comp-name" style="color:${cor}">${info.name}</span>
+        </div>`;
+    }
+
+    const lawRows = order.filter(k => papelInfo(k).team === 'law').map(compRow).join('');
+    const outRows = order.filter(k => papelInfo(k).team === 'outlaw').map(compRow).join('');
+
     content.innerHTML = `
         <div class="tela-top">
             <div class="tela-brand">★ SALOON ★</div>
             <div class="tela-code">SALA ${currentRoom}</div>
         </div>
-        <div class="screen-center-msg">
+        <div class="screen-dealing-center">
             <h1 class="tela-h1">${t('screen_dealing_title')}</h1>
             <p class="tela-sub">${t('screen_dealing_sub')}</p>
-            <div class="screen-big-suit">${suitSVG('LAW')}</div>
+            <div class="dealing-eyebrow">${t('screen_dealing_comp')}</div>
+            <div class="dealing-cols">
+                <div class="dealing-col law">
+                    <div class="dealing-col-head">${t('dealing_side_law')}</div>
+                    ${lawRows}
+                </div>
+                <div class="dealing-vs">×</div>
+                <div class="dealing-col outlaw">
+                    <div class="dealing-col-head">${t('dealing_side_outlaw')}</div>
+                    ${outRows}
+                </div>
+            </div>
         </div>`;
 }
 
