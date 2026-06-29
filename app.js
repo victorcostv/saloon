@@ -1489,7 +1489,7 @@ function showOnlineRoleReveal(code) {
             );
 
             Promise.all(extraFetches).then(() => {
-                myRoleData = roleData; // guarda para "Rever minha carta" no modo tela
+                myRoleData = roleData; // guarda para "Rever minha carta"
                 runCardScene({
                     card:    'online-reveal-card',
                     inner:   'online-reveal-card-inner',
@@ -1497,21 +1497,25 @@ function showOnlineRoleReveal(code) {
                     btnFlip: 'online-btn-flip-card',
                     btnDone: 'btn-online-understood'
                 }, roleData, {
-                    doneLabelKey: 'understood',
-                    keepCardOnDone: true,
+                    doneLabelKey: 'hide_card',
+                    keepCardOnDone: false,
                     onDone: (doneBtn) => {
-                        // Toggle de "pronto": marca/desmarca no Firebase
-                        const isReady = doneBtn.classList.contains('is-ready');
-                        if (!isReady) {
-                            doneBtn.classList.add('is-ready');
-                            doneBtn.style.opacity = '0.55';
-                            doneBtn.innerText = t('waiting_all');
-                            db.ref('rooms/' + code + '/ready/' + onlineProfile.name).set(true);
-                        } else {
-                            doneBtn.classList.remove('is-ready');
-                            doneBtn.style.opacity = '1';
-                            doneBtn.innerText = t('understood');
-                            db.ref('rooms/' + code + '/ready/' + onlineProfile.name).remove();
+                        // A carta já virou de volta (escondida) pelo runCardScene.
+                        // Marca pronto e troca o botão para "aguardando".
+                        db.ref('rooms/' + code + '/ready/' + onlineProfile.name).set(true);
+                        doneBtn.innerText = t('waiting_all');
+                        doneBtn.style.opacity = '0.55';
+                        doneBtn.disabled = true;
+                        // botão de rever: reaparece e re-vira a carta ao tocar
+                        const flipBtn = document.getElementById('online-btn-flip-card');
+                        const innerEl = document.getElementById('online-reveal-card-inner');
+                        if (flipBtn && innerEl) {
+                            flipBtn.classList.remove('hidden');
+                            flipBtn.innerText = t('review_card_short');
+                            flipBtn.onclick = () => {
+                                AudioManager.playSFX('card');
+                                innerEl.classList.toggle('flipped');
+                            };
                         }
                     }
                 });
@@ -1520,13 +1524,23 @@ function showOnlineRoleReveal(code) {
             // Contador de prontos
             db.ref('rooms/' + code + '/ready').on('value', readySnap => {
                 const ready = readySnap.val() ? Object.keys(readySnap.val()).length : 0;
-                document.getElementById('online-ready-count').innerText = `✓ ${ready}/${count}`;
+                const rc = document.getElementById('online-ready-count');
+                if (rc) rc.innerText = `✓ ${ready}/${count}`;
                 if (ready >= count) {
                     db.ref('rooms/' + code + '/ready').off();
-                    db.ref('rooms/' + code + '/ready').remove();
-                    fadeToBlack(() => {
-                        listenToGameStatus(code);
-                        showOnlineBoard(code);
+                    // MODO PARTY: o telão é quem avança para o board (não o celular).
+                    // No online normal, cada celular avança sozinho.
+                    db.ref('rooms/' + code + '/screenMode').once('value').then(sm => {
+                        if (sm.val()) {
+                            // Party: apenas escuta o status; o telão dispara o board.
+                            listenToGameStatus(code);
+                        } else {
+                            db.ref('rooms/' + code + '/ready').remove();
+                            fadeToBlack(() => {
+                                listenToGameStatus(code);
+                                showOnlineBoard(code);
+                            });
+                        }
                     });
                 }
             });
@@ -1543,6 +1557,15 @@ function listenToGameStatus(code) {
     db.ref('rooms/' + code + '/status').on('value', snap => {
         const status = snap.val();
         if (!status) return;
+
+        // NOVA PARTIDA: a sala foi resetada para o lobby de espera.
+        if (status === 'waiting') {
+            db.ref('rooms/' + code + '/status').off();
+            myRoleData = null;
+            showScreen('screen-online-waiting');
+            listenToRoom(code);
+            return;
+        }
 
         if (status === 'voting') {
             setTimeout(() => {
@@ -2317,7 +2340,14 @@ function showOnlineGameOver(code, room, winner, reason) {
         showScreen('screen-phone-watch');
         const wt = document.getElementById('phone-watch-title');
         const ws = document.getElementById('phone-watch-sub');
+        const icon = document.querySelector('#screen-phone-watch .phone-watch-big');
         const winnerIsLaw = winner === 'LAW';
+        // troca o ícone do olho pelo naipe do time vencedor
+        if (icon) {
+            icon.innerHTML = suitSVG(winnerIsLaw ? 'LAW' : 'OUTLAW');
+            icon.style.width = '120px';
+            icon.style.height = '120px';
+        }
         if (wt) wt.innerText = winnerIsLaw ? t('law_wins') : t('outlaw_wins');
         if (wt) wt.style.color = winnerIsLaw ? 'var(--law)' : 'var(--outlaw)';
         if (ws) ws.innerText = t('phone_watch_screen_result');

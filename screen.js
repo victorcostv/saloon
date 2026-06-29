@@ -429,7 +429,24 @@ function renderScreenRevealing(room) {
                     ${outRows}
                 </div>
             </div>
+            <div class="dealing-ready-count" id="dealing-ready-count"></div>
         </div>`;
+
+    // O TELÃO é o juiz: monitora as confirmações de carta e, quando todos
+    // estiverem prontos, avança para o tabuleiro (board).
+    const totalPlayers = players.length;
+    const code = currentRoom;
+    db.ref('rooms/' + code + '/ready').off();
+    db.ref('rooms/' + code + '/ready').on('value', readySnap => {
+        const readyCount = readySnap.val() ? Object.keys(readySnap.val()).length : 0;
+        const el = document.getElementById('dealing-ready-count');
+        if (el) el.innerText = t('screen_ready_count', { ready: readyCount, total: totalPlayers });
+        if (totalPlayers > 0 && readyCount >= totalPlayers) {
+            db.ref('rooms/' + code + '/ready').off();
+            db.ref('rooms/' + code + '/ready').remove();
+            db.ref('rooms/' + code + '/status').set('board');
+        }
+    });
 }
 
 // Cabeçalho + miniatura da trilha (reusado em várias telas do telão)
@@ -870,36 +887,42 @@ function renderScreenMissionResult(code, room) {
     const failsRequired = (cfg.twoFailsRequired === missionIdx) ? 2 : 1;
     const missionSuccess = sabotages < failsRequired;
 
-    // luz: azul sucesso, vermelho falha
-    setLight(missionSuccess ? 'blue' : 'red');
-
-    // miniatura da trilha (com o resultado já aplicado)
+    // resultado aplicado na trilha
     const mResults = Object.assign({}, room.missionResults || {});
     mResults[missionIdx] = missionSuccess;
-    const trackHolder = document.createElement('div');
-    buildMissionTrack(trackHolder, cfg.missions, mResults, missionIdx,
-        cfg.twoFailsRequired === undefined ? -1 : cfg.twoFailsRequired, missionIdx);
 
-    const outcomeColor = missionSuccess ? 'var(--law)' : 'var(--outlaw)';
-    const outcomeTxt = missionSuccess ? t('mission_success') : t('mission_failed');
-
+    // Monta a estrutura para a animação de fichas (a mesma do jogo normal),
+    // com os elementos que playMissionResult espera + a trilha no topo.
     content.innerHTML = `
         <div class="tela-top">
             <div class="tela-brand">★ SALOON ★</div>
             <div class="tela-code">SALA ${code}</div>
         </div>
         <div class="mini-board"><span class="mb-label">${t('screen_track')}</span>
-            <div class="mini-track">${trackHolder.innerHTML}</div></div>
-        <div class="screen-mr-center">
-            <h1 class="screen-mr-title" style="color:${outcomeColor}">${missionSuccess ? '★' : '☠'} ${outcomeTxt}</h1>
-            <div class="screen-mr-sabotage">
-                <span class="mr-sab-num" style="color:${outcomeColor}">${sabotages}</span>
-                <span class="mr-sab-label">${sabotages === 1 ? t('one_sabotage') : t('n_sabotages')}</span>
+            <div class="mini-track" id="mr-track"></div></div>
+        <div class="screen-mr-result">
+            <div class="result-chip-row" id="screen-result-chip-row"></div>
+            <div class="sabotage-board" id="screen-sabotage-board">
+                <span class="sb-label">${t('n_sabotages')}</span>
+                <div class="sb-num" id="screen-mr-sab-count">0</div>
             </div>
+            <h1 id="screen-mr-outcome" class="display text-center"></h1>
+            <p id="screen-mr-outcome-lore" class="lore-text"></p>
+            <button id="screen-mr-next-hidden" class="hidden"></button>
         </div>`;
 
-    // avança automaticamente após 5 segundos
-    setTimeout(() => {
+    // trilha no topo (com a virada da ficha recém-resolvida)
+    const mrTrack = document.getElementById('mr-track');
+    if (mrTrack) {
+        buildMissionTrack(mrTrack, cfg.missions, mResults, missionIdx,
+            cfg.twoFailsRequired === undefined ? -1 : cfg.twoFailsRequired, missionIdx);
+    }
+
+    // Função que avança o jogo (chamada após a animação completa)
+    let _advanced = false;
+    const advance = () => {
+        if (_advanced) return;
+        _advanced = true;
         const winsLaw    = Object.values(mResults).filter(r => r === true).length;
         const winsOutlaw = Object.values(mResults).filter(r => r === false).length;
         const names = Object.keys(room.players);
@@ -932,7 +955,28 @@ function renderScreenMissionResult(code, room) {
         }
         db.ref('rooms/' + code).update(updates);
         setTimeout(() => { _screenMissionResolved = false; }, 1500);
-    }, 5000);
+    };
+
+    // Animação completa de fichas (suspense sempre na vermelha; aleatório na
+    // última azul de missões limpas) — a mesma do jogo normal.
+    setLight(missionSuccess ? 'blue' : 'red');
+    playMissionResult({
+        rowId: 'screen-result-chip-row',
+        boardId: 'screen-sabotage-board',
+        numId: 'screen-mr-sab-count',
+        outcomeId: 'screen-mr-outcome',
+        loreId: 'screen-mr-outcome-lore',
+        nextBtnId: 'screen-mr-next-hidden',
+        sabotages: sabotages,
+        total: total,
+        missionSuccess: missionSuccess,
+        onNext: advance
+    });
+
+    // No telão não há botão "próxima rodada": avança sozinho ~3,5s após o
+    // fim da animação (tempo de todos verem o veredito).
+    const chipsTime = 300 + total * 700 + (sabotages > 0 ? 1900 : 0) + 1400;
+    setTimeout(advance, chipsTime + 3500);
 }
 
 // Placeholders das telas restantes (próxima fatia)
