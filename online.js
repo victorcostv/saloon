@@ -26,6 +26,9 @@ let screenTimerInterval = null;
 
 const AVATARES = [1, 2, 3, 4, 5, 6, 7, 8].map(n => `avatars/avatar${n}.png`);
 
+// Avisos na janela do jogo (em vez do alert() do navegador).
+const avisar = (texto) => perguntar({ titulo: texto, sim: 'OK' });
+
 // As telas online de resultado e fim de jogo mantêm o brilho de vitória.
 TELAS_DE_DESFECHO.push('screen-online-mission-result', 'screen-online-game-over');
 
@@ -39,8 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
         setLight('orange');
         showScreen('screen-mode-select');
     };
-    document.getElementById('menu-home-btn').onclick = () => {
+    document.getElementById('menu-home-btn').onclick = async () => {
         SideMenu.close();
+        if ((currentRoom || state.emAndamento) && !(await perguntar({
+            titulo: t(currentRoom ? 'leave_room_title' : 'leave_game_title'),
+            texto:  t(currentRoom ? 'leave_room_text' : 'leave_game_text'),
+            sim: t('leave_game_yes'), nao: t('leave_game_no')
+        }))) return;
         if (currentRoom) {
             cleanupRoom(currentRoom);
             currentRoom = null;
@@ -90,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('online-profile-form').onsubmit = (e) => {
         e.preventDefault();
         const nome = document.getElementById('online-name-input').value.trim();
-        if (!nome) return alert(t('fill_name'));
+        if (!nome) return avisar(t('fill_name'));
         onlineProfile.name = nome;
         // Quem veio pelo QR não passou pela tela inicial: a música começa aqui.
         AudioManager.startBGM();
@@ -127,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Entrar em sala
     document.getElementById('btn-join-room').onclick = () => {
         const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-        if (!code) return alert(t('type_code'));
+        if (!code) return avisar(t('type_code'));
         joinRoomByCode(code);
     };
 });
@@ -137,9 +145,9 @@ function joinRoomByCode(code) {
     code = (code || '').trim().toUpperCase();
     if (!code) return;
     db.ref('rooms/' + code).once('value').then(snapshot => {
-        if (!snapshot.exists()) return alert(t('room_not_found'));
+        if (!snapshot.exists()) return avisar(t('room_not_found'));
         const room = snapshot.val();
-        if (room.status !== 'waiting') return alert(t('match_started'));
+        if (room.status !== 'waiting') return avisar(t('match_started'));
         db.ref('rooms/' + code + '/players/' + onlineProfile.name).set({
             name: onlineProfile.name,
             avatar: onlineProfile.avatar,
@@ -193,6 +201,10 @@ function listenToRoom(code) {
             } else {
                 btn.classList.add('hidden');
             }
+            const anfitriao = Object.values(players).find(p => p.isHost);
+            const espera = document.getElementById('online-waiting-host');
+            espera.classList.toggle('hidden', !!isHost || !anfitriao);
+            if (anfitriao) espera.innerText = t('waiting_host', { name: anfitriao.name });
         }
     });
 
@@ -1364,7 +1376,7 @@ function showOnlineGameOver(code, room, winner, reason) {
         else if (p.isFalsificador) { suitKey = 'FALSIFICADOR'; tag = t('tag_falsificador'); }
         const av = p.avatar || 'avatars/avatar1.png';
         const suit = (typeof suitSVG === 'function') ? suitSVG(suitKey) : '';
-        const tagHtml = tag ? `<span class="reveal-tag">${tag.trim()}</span>` : '';
+        const tagHtml = tag ? `<span class="reveal-tag">${tag.replace(/[()]/g, '').trim()}</span>` : '';
         if (p.role === 'LAW') {
             lawUl.innerHTML += `<li class="reveal-li law"><div class="avatar-wrap"><img src="${av}" alt=""></div><span class="reveal-name">${p.name}</span>${tagHtml}<span class="reveal-suit">${suit}</span></li>`;
         } else {

@@ -157,6 +157,33 @@ function mesaDireto(grupoId, aoChegarNaMesa) {
     aoChegarNaMesa();
 }
 
+// A carta grande tem tamanho fixo (80% da largura da mesa). Com muitos
+// comparsas, revólver e avisos, o texto não cabia e rolava dentro dela —
+// o último nome podia passar despercebido. Mede numa cópia invisível no
+// tamanho final e encolhe a letra só o necessário, antes de a carta virar.
+function ajustaCarta(faceEl) {
+    const mesa = document.querySelector('#screen-mesa .act-table');
+    const largura = mesa ? mesa.clientWidth * 0.8 : 0;   // .card3d.big { width: 80% }
+    faceEl.querySelector('.face-content').style.removeProperty('--esc');
+    if (!largura) return;
+    const medida = faceEl.cloneNode(true);
+    medida.removeAttribute('id');
+    Object.assign(medida.style, {
+        position: 'fixed', left: '-10000px', top: '0', right: 'auto', bottom: 'auto',
+        width: largura + 'px', height: (largura * 7 / 5) + 'px',
+        transform: 'none', visibility: 'hidden'
+    });
+    document.body.appendChild(medida);
+    const conteudo = medida.querySelector('.face-content');
+    let esc = 1;
+    while (esc > 0.72 && conteudo.scrollHeight > conteudo.clientHeight + 1) {
+        esc = Math.round((esc - 0.03) * 100) / 100;
+        conteudo.style.setProperty('--esc', esc);
+    }
+    medida.remove();
+    if (esc < 1) faceEl.querySelector('.face-content').style.setProperty('--esc', esc);
+}
+
 // ── Revelação: a carta descola da mesa, cresce e gira ──
 // opts (só o site usa): direto → sem o "passe o celular";
 // rotuloFim → texto do botão de esconder.
@@ -165,6 +192,7 @@ function runRevealScene(roleData, targetName, onDone, opts = {}) {
     const inner = document.getElementById('reveal-card-inner');
 
     buildCardFace(document.getElementById('role-card-display'), roleData);
+    ajustaCarta(document.getElementById('role-card-display'));
     card.classList.remove('big');
     inner.classList.remove('flipped');
 
@@ -421,7 +449,9 @@ function playMissionResult(opts) {
             AudioManager.playSFX('success');
             outEl.innerText = t_('mission_success_t');
             outEl.classList.add('neon-text', 'blue');
-            loreEl.innerText = t_('mission_success_lore');
+            // Sucesso com sabotagem só acontece na missão que precisa de 2:
+            // sem explicar, a caveira na mesa parecia um erro do jogo.
+            loreEl.innerText = opts.sabotages > 0 ? t_('needed_two_fails') : t_('mission_success_lore');
             document.body.classList.add('bg-winner-law');
         } else {
             AudioManager.playSFX('fail');

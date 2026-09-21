@@ -26,6 +26,11 @@ const I18N = {
         max_players: 'Máximo de 10 jogadores alcançado.',
         name_exists: 'Nome já existe.',
         close: 'Fechar',
+        leave_game_title: 'Sair da partida?',
+        leave_game_text: 'A partida em andamento será perdida.',
+        leave_game_yes: 'Sair',
+        leave_game_no: 'Continuar',
+        remove_player: 'Remover jogador',
         scroll_more: 'Deslize para ver mais',
 
         // ---- Passe o celular / confirmação ----
@@ -39,10 +44,10 @@ const I18N = {
         reveal_card: 'Revelar carta',
         flip_card: 'Virar a carta',
         hide_card: 'Esconder e passar adiante',
-        others_outlaws: 'Outros Fora-da-Lei',
+        others_outlaws: 'Outros Fora da Lei',
         has_revolver: 'VOCÊ POSSUI O REVÓLVER',
         boss_tagged: '(Chefe)',
-        delegate_notice: '<span class="delegate-target">{name}</span> é um fora-da-lei,<br>mas não deixe claro que você sabe disso...',
+        delegate_notice: '<span class="delegate-target">{name}</span> é um fora da lei,<br>mas não deixe claro que você sabe disso...',
 
         // ---- Papéis ----
         role_law: 'Equipe da Lei',
@@ -55,7 +60,7 @@ const I18N = {
         escrivao_title: 'Delegado ou Falsificador?',
         falsificador_desc2: 'Mas finge ser a autoridade.',
         falsificador_notice: 'Você aparece como possível <b>Delegado</b> para o Escrivão. No duelo, parece ser da <b>Lei</b>.',
-        law_desc1: 'Ajude o Xerife nas missões e descubra quem são os fora-da-lei.',
+        law_desc1: 'Ajude o Xerife nas missões e descubra quem são os fora da lei.',
         law_desc2: 'Você deve cumprir todas as missões em que estiver.',
         outlaw_desc1: 'Você está infiltrado na cidade.',
         outlaw_desc2: 'Sabote (ou não) as missões sem ser percebido.',
@@ -72,7 +77,7 @@ const I18N = {
         // ---- Votação (offline) ----
         team_vote_title: 'Votação da equipe',
         proposed_by: 'Equipe proposta por',
-        voting_rules: '<p><strong>A votação é feita em grupo, agora!</strong> Todos votam ao mesmo tempo de olhos fechados (polegar para cima = aprovar, para baixo = rejeitar).</p><p>Para a missão sair, são necessários pelo menos <strong id="majority-number" class="neon-text yellow">X</strong> votos de aprovação.</p>',
+        voting_rules: '<p><strong>A votação é feita em grupo, agora!</strong> Todos votam ao mesmo tempo de olhos fechados (polegar para cima = aprovar, para baixo = rejeitar).</p><p>Para a missão sair, são necessários pelo menos <strong id="majority-number" class="destaque">X</strong> votos de aprovação.</p>',
         vote_yes_group: 'Maioria APROVOU',
         vote_no_group: 'Maioria REJEITOU',
 
@@ -88,18 +93,20 @@ const I18N = {
         mission_success_t: 'Missão bem-sucedida!',
         mission_fail_t: 'Missão sabotada!',
         mission_success_lore: 'A operação em Red Rock foi concluída.',
+        needed_two_fails: 'Houve 1 sabotagem, mas esta missão só falhava com 2.',
         mission_fail_lore: 'Havia infiltrados na equipe e a operação falhou!',
 
         // ---- Duelo ----
         duel_time: 'Hora do duelo',
         duel_owner_has: '{name} possui o revólver.',
-        duel_choose: 'Você possui o revólver. Escolha alguém para duelar:',
+        duel_choose: 'Escolha alguém para duelar:',
         challenge: 'Desafiar',
         skip_duel: 'Pular duelo',
         duel_hold: 'Mantenha-se firme. Como você reage neste duelo?',
         shoot: 'ATIRAR',
         lower_gun: 'ABAIXAR A ARMA',
         dust_settling: 'A poeira está baixando...',
+        duel_gaze: 'Duelo de olhares',
         duel_decided: 'Os dois jogadores já tomaram suas decisões no duelo de olhares.',
         see_duel_result: 'Ver resultado do duelo',
         mission_ready: 'A equipe já decidiu',
@@ -121,23 +128,23 @@ const I18N = {
 
         // ---- Chefe / assassinato ----
         boss_last_chance: 'Última chance do Chefe',
-        boss_text: 'Os forasteiros foram escorraçados, mas você pode mudar isso! Tente encontrar o Delegado!',
+        boss_text: 'A Lei cumpriu 3 missões, mas o Chefe da Gangue ainda tem uma última bala. Chefe, pegue o celular e tente acertar quem é o Delegado.',
         assassinate: 'Assassinar',
 
         // ---- Fim de jogo ----
         game_over: 'Fim de jogo',
         team_law: 'Equipe da Lei',
-        team_outlaws: 'Fora-da-Lei',
+        team_outlaws: 'Fora da Lei',
         play_again: 'Jogar novamente',
         traitor: 'Traíra',
         tag_boss: ' (CHEFE)',
         tag_delegado: ' (DELEGADO)',
         tag_escrivao: ' (ESCRIVÃO)',
         tag_falsificador: ' (FALSIFICADOR)',
-        win_outlaw_rejects: 'Vitória dos Fora-da-Lei! 5 equipes seguidas foram rejeitadas pela cidade.',
+        win_outlaw_rejects: 'Vitória dos Fora da Lei! 5 equipes seguidas foram rejeitadas pela cidade.',
         win_law_missions: 'Vitória da Lei! A cidade de Red Rock foi salva.',
-        win_outlaw_missions: 'Vitória dos Fora-da-Lei! Red Rock sucumbiu.',
-        win_boss_shot: 'BANG! O Chefe da Gangue assassinou o Delegado antes de fugir! Vitória dos Fora-da-Lei!',
+        win_outlaw_missions: 'Vitória dos Fora da Lei! Red Rock sucumbiu.',
+        win_boss_shot: 'BANG! O Chefe da Gangue assassinou o Delegado antes de fugir! Vitória dos Fora da Lei!',
         win_boss_missed: 'O Chefe atirou na pessoa errada. A cidade executou todos eles! Vitória incontestável da Lei!',
 
         // ---- Sigilo da ficha ----
@@ -158,7 +165,7 @@ const I18N = {
                 <p class="tut-sub">Quem é o verdadeiro informante da Lei? Dois novos personagens entram, e um deles é pura fachada.</p>
                 <div class="card">
                     <h2>Os dois novos papéis</h2>
-                    <div class="teams"><div class="mini-card" data-papel="ESCRIVAO"><span class="nome">Escrivão</span><span class="meta">Da Lei. Vê dois nomes, mas não sabe qual é o Delegado.</span></div><div class="mini-card" data-papel="FALSIFICADOR"><span class="nome">Falsificador</span><span class="meta">Fora-da-lei. Finge ser a autoridade.</span></div></div>
+                    <div class="teams"><div class="mini-card" data-papel="ESCRIVAO"><span class="nome">Escrivão</span><span class="meta">Da Lei. Vê dois nomes, mas não sabe qual é o Delegado.</span></div><div class="mini-card" data-papel="FALSIFICADOR"><span class="nome">Falsificador</span><span class="meta">Fora da lei. Finge ser a autoridade.</span></div></div>
                     <p>Esta expansão <strong>exige o Delegado e o Chefe</strong> (Distintivo).</p>
                 </div>
                 <div class="card">
@@ -167,7 +174,7 @@ const I18N = {
                 </div>
                 <div class="card">
                     <h2>O disfarce do Falsificador</h2>
-                    <p>É um <strong>fora-da-lei comum</strong>: conhece os outros bandidos e <strong>pode sabotar</strong>. O <strong>Delegado não o enxerga</strong>, então ele blefa livremente. No <strong>duelo</strong>, aparece como time da <strong>Lei</strong>.</p>
+                    <p>É um <strong>fora da lei comum</strong>: conhece os outros bandidos e <strong>pode sabotar</strong>. O <strong>Delegado não o enxerga</strong>, então ele blefa livremente. No <strong>duelo</strong>, aparece como time da <strong>Lei</strong>.</p>
                     <div class="alerta"><span class="bang">!</span><span>Com a Farsante ativa, o Delegado passa a <strong>ver o Chefe</strong>, e quem some da visão dele é o <strong>Falsificador</strong>. Os dois são sempre pessoas diferentes.</span></div>
                 </div>`,
             GENERAL: `
@@ -176,7 +183,7 @@ const I18N = {
                     <h2>Dois times, uma cidade</h2>
                     <p>No início, cada jogador recebe uma carta <strong>secreta</strong> que define seu time. Ninguém mais pode vê-la.</p>
                     <div class="teams"><div class="mini-card" data-papel="LAW"><span class="nome">Equipe da Lei</span><span class="meta">A maioria. Não sabe quem é quem.</span></div><div class="mini-card" data-papel="OUTLAW"><span class="nome">Fora da Lei</span><span class="meta">A minoria infiltrada. Eles se conhecem entre si.</span></div></div>
-                    <p>A Lei vence cumprindo missões. Os Fora-da-Lei vencem sabotando sem serem descobertos.</p>
+                    <p>A Lei vence cumprindo missões. Os Fora da Lei vencem sabotando sem serem descobertos.</p>
                 </div>
                 <div class="card">
                     <h2>Objetivo: 3 fichas</h2>
@@ -190,17 +197,17 @@ const I18N = {
                 </div>
                 <div class="card">
                     <h2>A rodada, passo a passo</h2>
-                    <div class="trilha"><div class="passo"><div class="num"><span>1</span></div><h3>O Xerife monta a equipe</h3><p>Um jogador é o <strong>Xerife</strong> da rodada. Ele escolhe quem vai para a missão (o número na ficha). O cargo gira a cada rodada.</p></div><div class="passo"><div class="num"><span>2</span></div><h3>Todos votam na equipe</h3><p><strong>Todo mundo</strong> vota sim ou não — inclusive quem ficou de fora. Maioria simples aprova e a missão começa.</p><p>Rejeitou? O Xerife passa para o próximo jogador, que propõe outra equipe.</p></div><div class="passo"><div class="num"><span>3</span></div><h3>A missão é secreta</h3><p>Cada escolhido decide no celular, escondido: <strong>cumprir</strong> ou <strong>sabotar</strong>.</p><p>Quem é da Lei <strong>só pode cumprir</strong>. O Fora-da-Lei escolhe — sabotar avança o time dele, mas levanta suspeita.</p></div><div class="passo"><div class="num"><span>4</span></div><h3>O resultado vira ficha</h3><p>Os votos da missão são revelados juntos, sem dizer de quem foram. <strong>Uma única sabotagem</strong> já derruba a missão — e a ficha fica vermelha.</p></div></div>
-                    <div class="alerta"><span class="bang">!</span><span><strong>5 equipes rejeitadas em sequência</strong> = a cidade entrou em colapso. Vitória imediata dos Fora-da-Lei. Não deixem a votação travar!</span></div>
+                    <div class="trilha"><div class="passo"><div class="num"><span>1</span></div><h3>O Xerife monta a equipe</h3><p>Um jogador é o <strong>Xerife</strong> da rodada. Ele escolhe quem vai para a missão (o número na ficha). O cargo gira a cada rodada.</p></div><div class="passo"><div class="num"><span>2</span></div><h3>Todos votam na equipe</h3><p><strong>Todo mundo</strong> vota sim ou não — inclusive quem ficou de fora. Maioria simples aprova e a missão começa.</p><p>Rejeitou? O Xerife passa para o próximo jogador, que propõe outra equipe.</p></div><div class="passo"><div class="num"><span>3</span></div><h3>A missão é secreta</h3><p>Cada escolhido decide no celular, escondido: <strong>cumprir</strong> ou <strong>sabotar</strong>.</p><p>Quem é da Lei <strong>só pode cumprir</strong>. O Fora da Lei escolhe — sabotar avança o time dele, mas levanta suspeita.</p></div><div class="passo"><div class="num"><span>4</span></div><h3>O resultado vira ficha</h3><p>Os votos da missão são revelados juntos, sem dizer de quem foram. <strong>Uma única sabotagem</strong> já derruba a missão — e a ficha fica vermelha.</p></div></div>
+                    <div class="alerta"><span class="bang">!</span><span><strong>5 equipes rejeitadas em sequência</strong> = a cidade entrou em colapso. Vitória imediata dos Fora da Lei. Não deixem a votação travar!</span></div>
                     <div class="nota">Em mesas grandes, algumas missões exigem <strong>2 sabotagens</strong> para falhar — a ficha avisa com "2 sabotagens".</div>
                 </div>`,
             DELEGADO: `
                 <div class="card">
                     <h2>Delegado e Chefe</h2>
                     <p>Dois personagens especiais entram no baralho — um para cada time.</p>
-                    <div class="teams"><div class="mini-card" data-papel="DELEGADO"><span class="nome">Delegado</span><span class="meta">Da Lei. Começa sabendo quem é Fora-da-Lei.</span></div><div class="mini-card" data-papel="BOSS"><span class="nome">Chefe da Gangue</span><span class="meta">O único bandido que o Delegado NÃO conhece.</span></div></div>
+                    <div class="teams"><div class="mini-card" data-papel="DELEGADO"><span class="nome">Delegado</span><span class="meta">Da Lei. Começa sabendo quem é Fora da Lei.</span></div><div class="mini-card" data-papel="BOSS"><span class="nome">Chefe da Gangue</span><span class="meta">O único bandido que o Delegado NÃO conhece.</span></div></div>
                     <p>O Delegado precisa usar o que sabe com <strong>cautela</strong>: se agir na cara, vira alvo.</p>
-                    <div class="alerta"><span class="bang">!</span><span>Se a Lei vencer as 3 missões, o Chefe tem <strong>uma última bala</strong>: tentar adivinhar quem é o Delegado. Se acertar, os Fora-da-Lei <strong>roubam a vitória</strong>.</span></div>
+                    <div class="alerta"><span class="bang">!</span><span>Se a Lei vencer as 3 missões, o Chefe tem <strong>uma última bala</strong>: tentar adivinhar quem é o Delegado. Se acertar, os Fora da Lei <strong>roubam a vitória</strong>.</span></div>
                 </div>`,
             REVOLVER: `
                 <div class="card">
@@ -234,6 +241,11 @@ const I18N = {
         max_players: 'Maximum of 10 players reached.',
         name_exists: 'Name already exists.',
         close: 'Close',
+        leave_game_title: 'Leave the game?',
+        leave_game_text: 'The game in progress will be lost.',
+        leave_game_yes: 'Leave',
+        leave_game_no: 'Keep playing',
+        remove_player: 'Remove player',
         scroll_more: 'Swipe for more',
 
         pass_to: 'Pass the phone to',
@@ -275,7 +287,7 @@ const I18N = {
 
         team_vote_title: 'Team vote',
         proposed_by: 'Team proposed by',
-        voting_rules: '<p><strong>The vote happens as a group, right now!</strong> Everyone votes at once with eyes closed (thumbs up = approve, thumbs down = reject).</p><p>The mission needs at least <strong id="majority-number" class="neon-text yellow">X</strong> approval votes to go ahead.</p>',
+        voting_rules: '<p><strong>The vote happens as a group, right now!</strong> Everyone votes at once with eyes closed (thumbs up = approve, thumbs down = reject).</p><p>The mission needs at least <strong id="majority-number" class="destaque">X</strong> approval votes to go ahead.</p>',
         vote_yes_group: 'Majority APPROVED',
         vote_no_group: 'Majority REJECTED',
 
@@ -290,17 +302,19 @@ const I18N = {
         mission_success_t: 'Mission accomplished!',
         mission_fail_t: 'Mission sabotaged!',
         mission_success_lore: 'The Red Rock operation was a success.',
+        needed_two_fails: 'There was 1 sabotage, but this mission needed 2 to fail.',
         mission_fail_lore: 'There were infiltrators on the team and the operation failed!',
 
         duel_time: 'Time to duel',
         duel_owner_has: '{name} holds the revolver.',
-        duel_choose: 'You hold the revolver. Pick someone to duel:',
+        duel_choose: 'Choose someone to duel:',
         challenge: 'Challenge',
         skip_duel: 'Skip the duel',
         duel_hold: 'Stand your ground. How do you react in this duel?',
         shoot: 'SHOOT',
         lower_gun: 'LOWER YOUR GUN',
         dust_settling: 'The dust is settling...',
+        duel_gaze: 'Staredown duel',
         duel_decided: 'Both players have made their choices in the staredown.',
         see_duel_result: 'See the duel outcome',
         mission_ready: 'The team has decided',
@@ -321,7 +335,7 @@ const I18N = {
         outlaw_team: 'OUTLAW',
 
         boss_last_chance: "The Boss's last chance",
-        boss_text: 'The outsiders were run out of town, but you can change that! Try to find the Marshal!',
+        boss_text: 'The Law completed 3 missions, but the Gang Boss still has one last bullet. Boss, take the phone and try to hit the Marshal.',
         assassinate: 'Assassinate',
 
         game_over: 'Game over',
@@ -432,6 +446,8 @@ function setLanguage(lang) {
     localStorage.setItem('saloon_lang', lang);
     document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
     applyLanguage();
+    // Telas montadas pelo jogo (tutorial, avisos do setup) se refazem.
+    document.dispatchEvent(new Event('idioma'));
 }
 
 // Aplica as traduções nos elementos estáticos do HTML
@@ -439,8 +455,16 @@ function applyLanguage() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         el.innerText = t(el.getAttribute('data-i18n'));
     });
+    // Frases com números preenchidos pelo jogo (tamanho da equipe, votos,
+    // nome do intimidado): o texto novo entra, mas os valores ficam.
     document.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const valores = {};
+        el.querySelectorAll('[id]').forEach(filho => { valores[filho.id] = filho.innerText; });
         el.innerHTML = t(el.getAttribute('data-i18n-html'));
+        for (const id in valores) {
+            const filho = el.querySelector('#' + id);
+            if (filho && valores[id] !== undefined) filho.innerText = valores[id];
+        }
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
@@ -452,8 +476,5 @@ function applyLanguage() {
     });
 
     // Botão de som depende do estado do AudioManager
-    const sndBtn = document.getElementById('menu-sound-btn');
-    if (sndBtn && typeof AudioManager !== 'undefined') {
-        sndBtn.innerText = (AudioManager.isMuted ? '🔇 ' + t('sound_off') : '🔊 ' + t('sound_on'));
-    }
+    if (typeof AudioManager !== 'undefined') AudioManager.rotulo();
 }

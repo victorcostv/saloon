@@ -129,15 +129,23 @@ const AudioManager = {
     toggle() {
         if (!this.isInitialized) this.init();
         this.isMuted = !this.isMuted;
-        const btn = document.getElementById('menu-sound-btn');
         if (this.isMuted) {
             if (this.bgm) this.bgm.pause();
-            if (btn) btn.innerText = '🔇 ' + t('sound_off');
         } else {
             if (this.bgm) this.bgm.play().catch(e => console.warn("BGM play failed", e));
-            if (btn) btn.innerText = '🔊 ' + t('sound_on');
             this.playSFX('click');
         }
+        this.rotulo();
+    },
+
+    // O rótulo do menu segue o estado e o idioma: com data-i18n, a troca de
+    // idioma atualiza o texto sozinha.
+    rotulo() {
+        const btn = document.getElementById('menu-sound-btn');
+        if (!btn) return;
+        const chave = this.isMuted ? 'sound_off' : 'sound_on';
+        btn.setAttribute('data-i18n', chave);
+        btn.innerText = t(chave);
     },
 
     startBGM() {
@@ -145,8 +153,7 @@ const AudioManager = {
         if (!this.isMuted && this.bgm) {
             this.bgm.play().catch(e => console.warn("BGM play failed", e));
         }
-        const btn = document.getElementById('menu-sound-btn');
-        if (btn) btn.innerText = this.isMuted ? '🔇 ' + t('sound_off') : '🔊 ' + t('sound_on');
+        this.rotulo();
     },
 
     // O app saiu da tela (fechado, trocado de app, tela bloqueada): a música
@@ -369,18 +376,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('menu-sound-btn').onclick = () => {
         AudioManager.toggle();
     };
-    document.getElementById('menu-sound-btn').innerText = '🔊 ' + t('sound_on');
+    AudioManager.rotulo();
 
     document.getElementById('menu-tutorial-btn').onclick = () => {
         SideMenu.close();
         showTutorial('GENERAL');
     };
 
-    document.getElementById('menu-home-btn').onclick = () => {
+    document.getElementById('menu-home-btn').onclick = async () => {
         SideMenu.close();
+        if (state.emAndamento && !(await perguntar({
+            titulo: t('leave_game_title'), texto: t('leave_game_text'),
+            sim: t('leave_game_yes'), nao: t('leave_game_no')
+        }))) return;
         resetGameState();
         updateSetupUI();
-        showScreen('screen-setup-players');
+        showScreen('screen-setup-players', 'volta');
     };
 
     // Música para quando o app sai da tela. visibilitychange cobre o WebView;
@@ -392,6 +403,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('pause',  () => AudioManager.pausarPorFundo());
     document.addEventListener('resume', () => AudioManager.voltarDoFundo());
     window.addEventListener('pagehide', () => AudioManager.pausarPorFundo());
+
+    // Depois de trocar o idioma, refaz o que o jogo escreveu na tela aberta.
+    document.addEventListener('idioma', () => {
+        const aberta = document.querySelector('.screen.active');
+        if (!aberta) return;
+        if (aberta.id === 'screen-tutorial' && tutorialAtual) showTutorial(tutorialAtual);
+        if (aberta.id === 'screen-setup-players') _sincronizaSetup();
+    });
 
     // Troca de idioma (PT 🇧🇷 / EN 🇺🇸)
     document.querySelectorAll('.lang-opt').forEach(btn => {
@@ -436,7 +455,34 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-back-to-players').onclick = () => showScreen('screen-setup-players', 'volta');
 });
 
+// Pergunta com a janela do jogo (em vez do confirm() do sistema).
+// Resolve true em "sim" e false em "não" ou num toque fora da caixa.
+// Sem `nao`, é só um aviso com um botão.
+function perguntar({ titulo, texto, sim, nao }) {
+    const caixa = document.getElementById('confirma');
+    document.getElementById('confirma-titulo').innerText = titulo;
+    document.getElementById('confirma-texto').innerText = texto;
+    const bSim = document.getElementById('confirma-sim');
+    const bNao = document.getElementById('confirma-nao');
+    bSim.innerText = sim;
+    bNao.innerText = nao || '';
+    bNao.classList.toggle('hidden', !nao);   // só "sim": vira um aviso com OK
+    document.getElementById('confirma-texto').classList.toggle('hidden', !texto);
+    caixa.classList.remove('hidden');
+    return new Promise(resolve => {
+        const fecha = (resposta) => {
+            caixa.classList.add('hidden');
+            bSim.onclick = bNao.onclick = caixa.onclick = null;
+            resolve(resposta);
+        };
+        bSim.onclick = () => fecha(true);
+        bNao.onclick = () => fecha(false);
+        caixa.onclick = (e) => { if (e.target === caixa) fecha(false); };
+    });
+}
+
 function resetGameState() {
+    state.emAndamento = false;
     state.players.forEach(p => { p.role = null; p.isBoss = false; p.isDelegado = false; p.isEscrivao = false; p.isFalsificador = false; });
     state.currentMissionIndex = 0;
     state.rejectedTeams = 0;
@@ -475,7 +521,7 @@ let linhaEditada = null;
 function _linhaJogador(nome) {
     const li = document.createElement('li');
     li.className = 'linha-jogador';
-    li.innerHTML = `<span class="nome"></span><button class="lixeira" aria-label="Remover">${TRASH_SVG}</button>`;
+    li.innerHTML = `<span class="nome"></span><button class="lixeira" aria-label="${t('remove_player')}">${TRASH_SVG}</button>`;
     li.querySelector('.nome').textContent = nome || '';
     return li;
 }
@@ -727,6 +773,7 @@ function initializeGame() {
 
     state.currentPlayerInteractionIndex = 0;
     state.pendingAction = 'REVEAL';
+    state.emAndamento = true;
     startInteractionLoop();
 }
 
@@ -1200,7 +1247,11 @@ function showBossAssassination() {
         }
     });
 
+    // Numa partida nova o botão tem de começar travado de novo, senão dava
+    // para atirar sem escolher ninguém.
+    document.getElementById('btn-boss-shoot').disabled = true;
     document.getElementById('btn-boss-shoot').onclick = () => {
+        if (targetSelected < 0) return;
         AudioManager.playSFX('shot');
         Haptics.thud();
         if (targetSelected === state.delegadoIndex) {
@@ -1235,17 +1286,20 @@ function endGame(reason, winner) {
     lawUl.innerHTML = '';
     outUl.innerHTML = '';
 
+    state.emAndamento = false;
+    // Cada nome com o ícone do papel (o mesmo da carta) e o cargo, se tiver.
     state.players.forEach(p => {
-        let title = p.name;
-        if (p.isBoss)         title += t('tag_boss');
-        if (p.isDelegado)     title += t('tag_delegado');
-        if (p.isEscrivao)     title += t('tag_escrivao');
-        if (p.isFalsificador) title += t('tag_falsificador');
-        if (p.role === 'LAW') {
-            lawUl.innerHTML += `<li><span>${title}</span></li>`;
-        } else {
-            outUl.innerHTML += `<li><span>${title}</span> <span style="color:var(--outlaw);font-size:0.95rem;">${t('traitor')}</span></li>`;
-        }
+        let papel = p.role, cargo = '';
+        if (p.isBoss)              { papel = 'BOSS';         cargo = t('tag_boss'); }
+        else if (p.isDelegado)     { papel = 'DELEGADO';     cargo = t('tag_delegado'); }
+        else if (p.isEscrivao)     { papel = 'ESCRIVAO';     cargo = t('tag_escrivao'); }
+        else if (p.isFalsificador) { papel = 'FALSIFICADOR'; cargo = t('tag_falsificador'); }
+        const li = document.createElement('li');
+        li.className = 'final-li';
+        li.innerHTML = `<span class="final-icone">${suitSVG(papel)}</span><span class="final-nome"></span><span class="final-cargo"></span>`;
+        li.querySelector('.final-nome').textContent = p.name;
+        li.querySelector('.final-cargo').textContent = cargo.replace(/[()]/g, '').trim();
+        (p.role === 'LAW' ? lawUl : outUl).appendChild(li);
     });
 
     document.getElementById('btn-play-again').onclick = () => {
@@ -1295,7 +1349,9 @@ function refreshExtraCards() {
     document.getElementById('card-farsante').classList.toggle('disabled-card', !rolesOn);
 }
 
+let tutorialAtual = null;
 function showTutorial(type) {
+    tutorialAtual = type;
     const activeScreen = document.querySelector('.screen.active');
     if (activeScreen && activeScreen.id !== 'screen-tutorial') {
         lastScreenId = activeScreen.id;
@@ -1364,10 +1420,15 @@ function _revelaAoRolar(contentDiv) {
 function _avisoRolar(contentDiv) {
     const aviso = document.getElementById('tut-rolar');
     const temMais = () => contentDiv.scrollHeight - contentDiv.clientHeight - contentDiv.scrollTop > 40;
+    // Aparece e, se ninguém rolar, sai sozinho depois de uns segundos para
+    // não ficar tapando o texto de quem está lendo.
     const mostraDaquiA = (ms) => {
         clearTimeout(aviso._timer);
+        clearTimeout(aviso._some);
         aviso._timer = setTimeout(() => {
-            if (temMais()) aviso.classList.remove('escondida');
+            if (!temMais()) return;
+            aviso.classList.remove('escondida');
+            aviso._some = setTimeout(() => aviso.classList.add('escondida'), 4000);
         }, REDUCED_MOTION ? 0 : ms);
     };
     aviso.classList.add('escondida');

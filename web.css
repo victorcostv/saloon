@@ -516,3 +516,72 @@ body.is-screen.mission-bg::before { background: linear-gradient(160deg, #c87528,
 .screen-tela .mission-bubble .chip-num { font-size: 42cqw; }
 /* O botão de menu fica no canto: o selo da sala abre espaço para ele. */
 body.is-screen .tela-top { padding-right: calc(4vw + 64px); }
+
+
+/* ── Ajustes da revisão ── */
+/* Grade de duas colunas: avatar menor e nome que corta com reticências. */
+.selectable-item.has-avatar { gap: 8px; padding: 8px; }
+.selectable-item.has-avatar .avatar-wrap { width: 40px; height: 40px; }
+.selectable-item.has-avatar .player-name {
+    font-size: 1.25rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--vinho);
+}
+.selectable-item.has-avatar.selected::before { content: none; }
+.selectable-item.has-avatar.selected .player-name::before { content: '★ '; }
+/* Votação online: a equipe em pílulas, como no jogo local. */
+#online-voting-team { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 12px 0 14px; }
+#online-voting-team li { padding: 6px 18px; font-size: 1.5rem; border-width: 4px; }
+
+/* Frases em vinho sobre o deserto: um halo claro para não sumirem quando
+   caem sobre as montanhas avermelhadas. */
+.scene-note, .lore-text, .result-sub, .sigilo-line,
+.board-info p, .screen > p.text-center, #online-duel-owner-area > p, #online-boss-action-area > p {
+    text-shadow: 0 0 10px rgba(255, 236, 205, 0.9), 0 0 3px rgba(255, 236, 205, 0.9);
+}
+/* Espera do tiro do Chefe: a arte do revólver no lugar do emoji. */
+.mira-chefe { display: block; width: 120px; margin: 0 auto 8px; filter: drop-shadow(0 6px 0 rgba(81, 37, 3, 0.3)); }
+/* Fim de jogo online: linhas compactas, como no jogo local. */
+.reveal-li { padding: 5px 16px 5px 8px !important; border-width: 4px !important; }
+.reveal-li .avatar-wrap { width: 36px; height: 36px; }
+.reveal-li .reveal-name { font-size: 1.3rem; color: inherit; }
+.reveal-li .reveal-tag { font-size: 0.8rem; letter-spacing: 1px; opacity: 0.85; color: inherit; }
+.reveal-li .reveal-suit { width: 26px; height: 26px; }
+#online-final-law-list, #online-final-outlaw-list { gap: 6px; }
+#online-final-law-list li { border-color: var(--law); color: var(--law); }
+#online-final-outlaw-list li { border-color: var(--outlaw); color: var(--outlaw); }
+#screen-online-game-over .roles-reveal-final { padding-bottom: 0; }
+
+/* ── Telão com a tipografia do jogo ── */
+/* Títulos brancos com contorno vinho (o amarelo sumia no céu claro); os de
+   perigo (duelo, Chefe) com contorno vermelho. */
+.tela-h1 {
+    color: #fff !important;
+    -webkit-text-stroke: 0.07em var(--vinho);
+    paint-order: stroke fill;
+    text-shadow: 0 0.06em 0 var(--vinho);
+}
+.tela-h1[style*="--outlaw"] { -webkit-text-stroke-color: var(--outlaw); text-shadow: 0 0.06em 0 #991b1b; }
+.screen-vr-title { -webkit-text-stroke: 0.06em #fff; paint-order: stroke fill; }
+.screen-dust { color: #fff; opacity: 1; text-shadow: 0 2px 4px rgba(60, 20, 5, 0.55); }
+/* Placar de sabotagens: a mesma pílula do celular, em tamanho de TV. */
+.screen-mr-result .sabotage-board { flex-direction: row; gap: 1vw; padding: 1vh 2.2vw; border-width: 0.35vw; }
+.screen-mr-result .sb-label { font-size: 2vw; color: var(--vinho); text-shadow: none; }
+.screen-mr-result .sb-num { min-width: 4.4vw; height: 4.4vw; font-size: 2.3vw; line-height: 1; color: #fff; }
+.screen-mr-result .sabotage-board.zero .sb-num { color: #fff; }
+
+/* Fim de jogo no telão: título e colunas no estilo dos títulos do jogo. */
+.sgo-title { -webkit-text-stroke: 0.06em #fff; paint-order: stroke fill; text-shadow: 0 0.06em 0 rgba(60, 20, 5, 0.35); }
+.sgo-head {
+    font-family: var(--font-display);
+    font-size: 2vw !important;
+    letter-spacing: 2px;
+    -webkit-text-stroke: 0.08em #fff;
+    paint-order: stroke fill;
+}
+.sgo-reason { color: #fff; text-shadow: 0 2px 4px rgba(60, 20, 5, 0.6); }
+.sgo-row.law { border-color: var(--law); } .sgo-row.outlaw { border-color: var(--outlaw); }
+.sgo-row.law .sgo-name { color: var(--law); } .sgo-row.outlaw .sgo-name { color: var(--outlaw); }

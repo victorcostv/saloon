@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Saloon</title>
     <meta name="description" content="Jogo de dedução social para 5 a 10 pessoas, em um único aparelho.">
-    <link rel="stylesheet" href="style.css?v=mubsdxhw">
-    <link rel="stylesheet" href="web.css?v=mubsdxhw">
+    <link rel="stylesheet" href="style.css?v=mubu7zze">
+    <link rel="stylesheet" href="web.css?v=mubu7zze">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="images/icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -45,8 +45,8 @@
     <div id="side-menu-panel">
         <h2 data-i18n="menu">Saloon</h2>
 
-        <button id="menu-sound-btn" class="menu-btn">🔊 Som ativado</button>
-        <button id="menu-tutorial-btn" class="menu-btn">📜 <span data-i18n="how_to_play">Como jogar</span></button>
+        <button id="menu-sound-btn" class="menu-btn" data-i18n="sound_on">Som ativado</button>
+        <button id="menu-tutorial-btn" class="menu-btn" data-i18n="how_to_play">Como jogar</button>
 
         <div class="menu-lang">
             <div class="lang-label" data-i18n="language">Idioma</div>
@@ -56,7 +56,7 @@
             </div>
         </div>
 
-        <button id="menu-home-btn" class="menu-btn menu-home">🏠 <span data-i18n="home_screen">Tela inicial</span></button>
+        <button id="menu-home-btn" class="menu-btn menu-home" data-i18n="home_screen">Tela inicial</button>
     </div>
 
     <!-- ============================================
@@ -238,7 +238,9 @@
         <div id="team-selection-area" class="hidden">
             <h3 style="margin-top:14px;" data-i18n="select_team">Selecione a equipe:</h3>
             <div id="team-select-list" class="selectable-list cascata"></div>
-            <button id="btn-submit-team" class="btn btn-primary lg mt-2" disabled data-i18n="propose_team">Propor equipe</button>
+            <div class="acoes-fixas">
+                <button id="btn-submit-team" class="btn btn-primary lg" disabled data-i18n="propose_team">Propor equipe</button>
+            </div>
         </div>
     </section>
 
@@ -247,9 +249,9 @@
         <p class="text-center"><span data-i18n="proposed_by">Equipe proposta por</span> <strong id="voting-sheriff-name" class="neon-text blue">Xerife</strong>:</p>
         <ul id="voting-team-preview" class="list-group cascata"></ul>
         <div class="card mission-card" id="voting-rules-card" data-i18n-html="voting_rules"></div>
-        <div class="voting-actions" style="margin-top:auto;">
-            <button id="btn-vote-trust-group" class="btn btn-law lg mt-2" data-i18n="vote_yes_group">Maioria APROVOU</button>
-            <button id="btn-vote-distrust-group" class="btn btn-outlaw lg mt-4" data-i18n="vote_no_group">Maioria REJEITOU</button>
+        <div class="voting-actions acoes-fixas">
+            <button id="btn-vote-trust-group" class="btn btn-law lg" data-i18n="vote_yes_group">Maioria APROVOU</button>
+            <button id="btn-vote-distrust-group" class="btn btn-outlaw lg" data-i18n="vote_no_group">Maioria REJEITOU</button>
         </div>
     </section>
 
@@ -281,8 +283,10 @@
         <h3 class="neon-text blue text-center" id="duel-owner-name">NOME</h3>
         <p class="text-center" data-i18n="duel_choose">Você possui o revólver. Escolha alguém para duelar:</p>
         <div class="selectable-list cascata" id="duel-targets-list"></div>
-        <button id="btn-challenge" class="btn btn-outlaw lg mt-4" disabled data-som="arma" data-i18n="challenge">Desafiar</button>
-        <button id="btn-skip-duel" class="btn btn-ghost lg mt-2" data-i18n="skip_duel">Pular duelo</button>
+        <div class="acoes-fixas">
+            <button id="btn-challenge" class="btn btn-outlaw lg" disabled data-som="arma" data-i18n="challenge">Desafiar</button>
+            <button id="btn-skip-duel" class="btn btn-ghost" data-i18n="skip_duel">Pular duelo</button>
+        </div>
     </section>
 
     <section id="screen-duel-action" class="screen">
@@ -295,12 +299,14 @@
     </section>
 
     <section id="screen-duel-suspense" class="screen">
-        <h2 class="display text-center" style="font-size:1.6rem;" data-i18n="dust_settling">A poeira está baixando...</h2>
-        <p class="text-center" data-i18n="duel_decided">Os dois jogadores já tomaram suas decisões no duelo de olhares.</p>
-        <div class="card mission-card text-center" style="margin:auto 0;">
-            <h1 class="suspense-mark">💥</h1>
+        <div class="pass-stage">
+            <p class="scene-eyebrow" data-i18n="duel_gaze">Duelo de olhares</p>
+            <h1 class="scene-name" data-i18n="dust_settling">A poeira está baixando...</h1>
+            <p class="scene-note" data-i18n="duel_decided">Os dois jogadores já tomaram suas decisões no duelo de olhares.</p>
         </div>
-        <button id="btn-reveal-duel-result" class="btn btn-primary lg mt-4" data-i18n="see_duel_result">Ver resultado do duelo</button>
+        <div class="pass-acao">
+            <button id="btn-reveal-duel-result" class="btn btn-primary" data-i18n="see_duel_result">Ver resultado do duelo</button>
+        </div>
     </section>
 
     <section id="screen-duel-result" class="screen">
@@ -325,8 +331,10 @@
     <section id="screen-boss-assassination" class="screen">
         <h2 class="display text-center neon-text red" style="font-size:1.6rem;" data-i18n="boss_last_chance">Última chance do Chefe</h2>
         <p class="text-center" data-i18n="boss_text">Os forasteiros foram escorraçados, mas você pode mudar isso! Tente encontrar o Delegado!</p>
-        <div class="selectable-list" id="assassination-list"></div>
-        <button id="btn-boss-shoot" class="btn btn-outlaw lg mt-4" disabled data-i18n="assassinate">Assassinar</button>
+        <div class="selectable-list cascata" id="assassination-list"></div>
+        <div class="acoes-fixas">
+            <button id="btn-boss-shoot" class="btn btn-outlaw lg" disabled data-som="arma" data-i18n="assassinate">Assassinar</button>
+        </div>
     </section>
 
     <!-- ══════════════════════════════════════
@@ -344,6 +352,18 @@
         </div>
         <button id="btn-play-again" class="btn btn-primary lg" data-i18n="play_again">Jogar novamente</button>
     </section>
+
+    <!-- Confirmação para ações que perdem a partida (ex.: "Tela inicial" no menu). -->
+    <div id="confirma" class="confirma hidden" role="dialog" aria-modal="true" aria-labelledby="confirma-titulo">
+        <div class="confirma-caixa">
+            <h3 id="confirma-titulo"></h3>
+            <p id="confirma-texto"></p>
+            <div class="confirma-botoes">
+                <button type="button" id="confirma-nao" class="btn btn-ghost"></button>
+                <button type="button" id="confirma-sim" class="btn btn-primary"></button>
+            </div>
+        </div>
+    </div>
 
     <!-- ####################################################
          ##   SÓ NO SITE: escolha de modo, online e telão   ##
@@ -455,6 +475,7 @@
         </div>
 
         <div class="setup-actions">
+            <p id="online-waiting-host" class="aviso-espera hidden"></p>
             <button id="btn-start-online-game" class="btn btn-primary lg hidden" data-som="arma">Iniciar partida!</button>
             <button id="btn-leave-room" class="btn btn-ghost" data-i18n="leave_room">Sair da sala</button>
         </div>
@@ -541,7 +562,9 @@
         <div id="online-sheriff-area" class="hidden">
             <h3 id="online-sheriff-instruction" style="margin-top:14px;">Selecione a equipe:</h3>
             <div id="online-team-select-list" class="selectable-list cascata"></div>
-            <button id="online-btn-propose" class="btn btn-primary lg mt-2" disabled data-i18n="propose_team">Propor equipe</button>
+            <div class="acoes-fixas">
+                <button id="online-btn-propose" class="btn btn-primary lg" disabled data-i18n="propose_team">Propor equipe</button>
+            </div>
         </div>
         <div id="online-waiting-area" class="hidden">
             <p id="online-waiting-text" class="aviso-espera"></p>
@@ -556,9 +579,9 @@
         <p class="text-center" data-i18n="proposed_team">Equipe proposta:</p>
         <ul id="online-voting-team" class="list-group cascata"></ul>
         <p id="online-votes-count" class="contagem-votos">0/0</p>
-        <div id="online-vote-area" class="voting-actions" style="margin-top:auto;">
-            <button id="online-btn-vote-yes" class="btn btn-law lg mt-2" data-i18n="approve">Aprovar</button>
-            <button id="online-btn-vote-no" class="btn btn-outlaw lg mt-4" data-i18n="reject">Rejeitar</button>
+        <div id="online-vote-area" class="voting-actions acoes-fixas">
+            <button id="online-btn-vote-yes" class="btn btn-law lg" data-i18n="approve">Aprovar</button>
+            <button id="online-btn-vote-no" class="btn btn-outlaw lg" data-i18n="reject">Rejeitar</button>
         </div>
         <p id="online-voted-msg" class="aviso-espera hidden" style="margin-top:auto;" data-i18n-html="vote_registered">Voto registrado!<br>Aguardando os outros...</p>
     </section>
@@ -617,8 +640,10 @@
         <div id="online-duel-owner-area" class="hidden">
             <p class="text-center" data-i18n="duel_choose_target">Escolha um jogador para duelar:</p>
             <div id="online-duel-targets-list" class="selectable-list cascata"></div>
-            <button id="online-btn-challenge" class="btn btn-outlaw lg mt-4" disabled data-som="arma" data-i18n="challenge">Desafiar</button>
-            <button id="online-btn-skip-duel" class="btn btn-ghost lg mt-2" data-i18n="skip_duel">Pular duelo</button>
+            <div class="acoes-fixas">
+                <button id="online-btn-challenge" class="btn btn-outlaw lg" disabled data-som="arma" data-i18n="challenge">Desafiar</button>
+                <button id="online-btn-skip-duel" class="btn btn-ghost" data-i18n="skip_duel">Pular duelo</button>
+            </div>
         </div>
         <div id="online-duel-waiting-area" class="hidden" style="margin:auto 0;">
             <p class="aviso-espera" data-i18n="owner_choosing">O dono do revólver está escolhendo um alvo...</p>
@@ -660,10 +685,12 @@
         <div id="online-boss-action-area" class="hidden">
             <p class="text-center" data-i18n-html="you_are_boss">Você é o CHEFE DA GANGUE!<br>Tente adivinhar quem é o Delegado:</p>
             <div id="online-assassination-list" class="selectable-list cascata"></div>
-            <button id="online-btn-boss-shoot" class="btn btn-outlaw lg mt-4" disabled data-i18n="assassinate">Assassinar</button>
+            <div class="acoes-fixas">
+                <button id="online-btn-boss-shoot" class="btn btn-outlaw lg" disabled data-som="arma" data-i18n="assassinate">Assassinar</button>
+            </div>
         </div>
         <div id="online-boss-waiting-area" class="hidden" style="margin:auto 0;">
-            <h1 class="suspense-mark text-center">🎯</h1>
+            <img class="mira-chefe" src="images/revolver.png" alt="">
             <p class="aviso-espera" data-i18n="boss_aiming">O Chefe da Gangue está mirando no Delegado...</p>
         </div>
     </section>
@@ -680,8 +707,10 @@
             <h3 class="time-fora" data-i18n="team_outlaws">Fora-da-Lei</h3>
             <ul id="online-final-outlaw-list" class="list-group"></ul>
         </div>
-        <button id="online-btn-play-again" class="btn btn-primary lg" data-i18n="play_again">Jogar novamente</button>
-        <button id="online-btn-back-menu" class="btn btn-ghost mt-2" data-i18n="back_menu">Voltar ao menu</button>
+        <div class="acoes-fixas">
+            <button id="online-btn-play-again" class="btn btn-primary lg" data-i18n="play_again">Jogar novamente</button>
+            <button id="online-btn-back-menu" class="btn btn-ghost" data-i18n="back_menu">Voltar ao menu</button>
+        </div>
     </section>
 
 </div>
@@ -701,13 +730,13 @@
     });
     const db = firebase.database();
 </script>
-<script src="i18n.js?v=mubsdxhw"></script>
-<script src="i18n-web.js?v=mubsdxhw"></script>
-<script src="art.js?v=mubsdxhw"></script>
-<script src="fx.js?v=mubsdxhw"></script>
-<script src="app.js?v=mubsdxhw"></script>
-<script src="qrcode.js?v=mubsdxhw"></script>
-<script src="online.js?v=mubsdxhw"></script>
-<script src="screen.js?v=mubsdxhw"></script>
+<script src="i18n.js?v=mubu7zze"></script>
+<script src="i18n-web.js?v=mubu7zze"></script>
+<script src="art.js?v=mubu7zze"></script>
+<script src="fx.js?v=mubu7zze"></script>
+<script src="app.js?v=mubu7zze"></script>
+<script src="qrcode.js?v=mubu7zze"></script>
+<script src="online.js?v=mubu7zze"></script>
+<script src="screen.js?v=mubu7zze"></script>
 </body>
 </html>

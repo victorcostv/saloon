@@ -1088,7 +1088,7 @@ function renderScreenGameOver(code, room, status) {
         else if (p.isEscrivao) { suitKey = 'ESCRIVAO'; tag = t('tag_escrivao'); }
         else if (p.isFalsificador) { suitKey = 'FALSIFICADOR'; tag = t('tag_falsificador'); }
         const av = p.avatar || 'avatars/avatar1.png';
-        const tagHtml = tag ? `<span class="sgo-tag">${tag.trim()}</span>` : '';
+        const tagHtml = tag ? `<span class="sgo-tag">${tag.replace(/[()]/g, '').trim()}</span>` : '';
         return `<div class="sgo-row ${p.role === 'LAW' ? 'law' : 'outlaw'}">
             <div class="sgo-av"><img src="${av}"></div>
             <span class="sgo-name">${p.name}</span>${tagHtml}
@@ -1116,7 +1116,7 @@ function renderScreenGameOver(code, room, status) {
                     ${outRows}
                 </div>
             </div>
-            <button id="btn-screen-newgame" class="btn btn-neon-red lg">${t('screen_new_game')}</button>
+            <button id="btn-screen-newgame" class="btn btn-primary lg">${t('screen_new_game')}</button>
         </div>`;
 
     // botão de nova partida: volta todos ao lobby

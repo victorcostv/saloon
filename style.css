@@ -450,15 +450,22 @@ input[type="text"]:focus {
 .list-group li button:hover { transform: scale(1.15); }
 
 /* Lista selecionável — com estrela ao escolher */
+/* Escolher jogadores (equipe, alvo do duelo, alvo do Chefe): grade de
+   duas colunas, para até 10 nomes caberem sem rolar até o botão. */
 .selectable-list {
     margin: 14px 0;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
 }
 .selectable-item {
-    padding: 14px;
-    font-size: 1.5rem;
+    padding: 12px 8px;
+    font-size: 1.4rem;
+    line-height: 1.1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-family: var(--font-display);
     text-align: center;
     background: #ffffff;
@@ -802,15 +809,18 @@ body.scene-mode #btn-hamburger { display: none !important; }
     padding: 12% 13%;
     overflow-y: auto;
     scrollbar-width: none;
+    /* Tudo na carta é medido em em a partir daqui: --esc (ajustaCarta, em
+       fx.js) encolhe o conjunto quando o texto não cabe na carta grande. */
+    font-size: calc(1rem * var(--esc, 1));
 }
 .face-content::-webkit-scrollbar { display: none; }
 
-.face-suit { width: 50px; height: 50px; flex-shrink: 0; margin-bottom: 6px; }
+.face-suit { width: 3.125em; height: 3.125em; flex-shrink: 0; margin-bottom: 6px; }
 .face-suit svg { display: block; width: 100%; height: 100%; }
 
 .face-role-name {
     font-family: var(--font-display);
-    font-size: 2.1rem;
+    font-size: 2.1em;
     letter-spacing: 1.5px;
     margin-bottom: 6px;
     line-height: 1.1;
@@ -818,7 +828,7 @@ body.scene-mode #btn-hamburger { display: none !important; }
 }
 .face-desc {
     font-family: var(--font-body);
-    font-size: 0.92rem;
+    font-size: 0.92em;
     font-weight: 700;
     color: var(--ink-soft);
     line-height: 1.35;
@@ -834,28 +844,28 @@ body.scene-mode #btn-hamburger { display: none !important; }
     border: 2px dashed var(--vinho);
     border-radius: 12px;
     font-family: var(--font-body);
-    font-size: 0.88rem;
+    font-size: 0.88em;
     font-weight: 800;
     color: var(--ink);
 }
 .face-extra h3 {
     font-family: var(--font-display);
-    font-size: 1.05rem;
+    font-size: 1.19em;
     color: var(--vinho);
     margin-bottom: 3px;
 }
 .face-extra ul { list-style: none; }
-.face-extra li { color: var(--outlaw); font-family: var(--font-display); font-size: 1.15rem; }
+.face-extra li { color: var(--outlaw); font-family: var(--font-display); font-size: 1.31em; }
 .face-extra .delegate-target { color: var(--outlaw); font-weight: 900; }
 .face-extra .escrivao-nomes {
     color: var(--law);
     font-family: var(--font-display);
-    font-size: 1.25rem;
+    font-size: 1.42em;
     letter-spacing: 0.5px;
     text-align: center;
 }
 .face-extra.falsificador-notice p {
-    font-size: 0.66rem;
+    font-size: 0.82em;
     line-height: 1.25;
 }
 .face-extra.falsificador-notice b { color: var(--vinho); }
@@ -866,7 +876,7 @@ body.scene-mode #btn-hamburger { display: none !important; }
     gap: 8px;
     color: var(--vinho);
 }
-.face-extra.revolver-line img { width: 28px; height: 28px; object-fit: contain; }
+.face-extra.revolver-line img { width: 2em; height: 2em; object-fit: contain; }
 
 /* ════════════════════════════════════════════
    TELA "PASSE O CELULAR" (duelo)
@@ -944,6 +954,7 @@ body.scene-mode #btn-hamburger { display: none !important; }
 }
 
 .menu-btn {
+    justify-content: center;
     padding: 15px;
     border: 4px solid var(--vinho);
     border-radius: 20px;
@@ -989,7 +1000,7 @@ body.scene-mode #btn-hamburger { display: none !important; }
 }
 .lang-opt.active { background: var(--accent); }
 
-.menu-home { margin-top: auto; background: #fbc687; }
+.menu-home { margin-top: auto; }
 
 /* ════════════════════════════════════════════
    CARDS DE REGRAS AVANÇADAS
@@ -1291,6 +1302,20 @@ body.scene-mode #btn-hamburger { display: none !important; }
 /* Cada lista carrega a cor do seu time, como as fichas e as cartas. */
 #final-law-list li     { border-color: var(--law);    color: var(--law); }
 #final-outlaw-list li  { border-color: var(--outlaw); color: var(--outlaw); }
+
+/* Lista compacta: ícone do papel (o mesmo da carta), nome e cargo. */
+#final-law-list, #final-outlaw-list { gap: 6px; }
+.roles-reveal-final .final-li {
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 5px 16px 5px 8px;
+    font-size: 1.35rem;
+    border-width: 4px;
+}
+.final-li .final-icone { width: 30px; height: 30px; flex-shrink: 0; }
+.final-li .final-icone svg { display: block; width: 100%; height: 100%; }
+.final-li .final-nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.final-li .final-cargo { font-size: 0.85rem; letter-spacing: 1px; opacity: 0.85; }
 
 /* Lista longa (até 10 jogadores) não pode empurrar o botão para fora da tela. */
 #btn-play-again {
@@ -1931,3 +1956,95 @@ body.suspense-dim::after {
     line-height: 1.2;
 }
 
+
+
+/* ════════════════════════════════════════════
+   AÇÕES SEMPRE À VISTA E AJUSTES DA REVISÃO
+   ════════════════════════════════════════════ */
+/* O botão da decisão (propor, votar, desafiar, atirar) fica grudado no pé
+   da tela: com muitos jogadores, ninguém precisa rolar até ele. */
+.acoes-fixas {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    margin-top: auto;
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.acoes-fixas .btn { width: 100%; }
+
+/* Títulos longos quebram em linhas equilibradas ("Intimidação /
+   bem-sucedida"), nunca no hífen com uma palavra sozinha embaixo. */
+.titulo-tela, .screen > h1.display, .screen > h2.display, .scene-name,
+.lore-text, .scene-note { text-wrap: balance; }
+
+/* Votação: a equipe em pílulas, para as regras e os botões caberem. */
+#voting-team-preview {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 12px 0 14px;
+}
+#voting-team-preview li {
+    padding: 6px 18px;
+    font-size: 1.5rem;
+    border-width: 4px;
+}
+/* Número em destaque dentro de cartão branco (o amarelo sumia no branco). */
+.destaque {
+    color: var(--vinho);
+    font-family: var(--font-display);
+    font-size: 1.25em;
+    letter-spacing: 0.5px;
+}
+
+/* ── Janela de confirmação ── */
+.confirma {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(40, 8, 20, 0.55);
+    animation: confirmaEntra 0.2s ease;
+}
+.confirma.hidden { display: none !important; }
+.confirma-caixa {
+    width: min(100%, 340px);
+    background: #fff;
+    border: 5px solid var(--vinho);
+    border-radius: 24px;
+    padding: 22px 20px 20px;
+    text-align: center;
+    box-shadow: 0 8px 0 var(--vinho);
+    animation: confirmaCaixa 0.28s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+.confirma-caixa h3 {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+    color: var(--vinho);
+    margin-bottom: 6px;
+}
+.confirma-caixa p {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    margin-bottom: 18px;
+}
+.confirma-botoes { display: flex; gap: 10px; }
+.confirma-botoes .btn { flex: 1; font-size: 1.3rem; padding: 11px 8px; }
+@keyframes confirmaEntra { from { opacity: 0; } }
+@keyframes confirmaCaixa { from { transform: scale(0.85); opacity: 0; } }
+
+/* Nome de time dentro de cartão branco: letra colorida (o branco com
+   contorno do título sumia no fundo branco). */
+.card .neon-text.blue, .card .neon-text.red { -webkit-text-stroke: 0; text-shadow: none; }
+.card .neon-text.blue { color: var(--law); }
+.card .neon-text.red  { color: var(--outlaw); }
