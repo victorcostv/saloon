@@ -1,8 +1,7 @@
 // ════════════════════════════════════════════
-// SALOON — app.js (redesign)
-// Lógica de jogo original preservada.
-// Mudanças: i18n via t(), fluxo de revelação com
-// carta 3D, transições de câmera, novos sons.
+// SALOON — app.js
+// Jogo de dedução social pass-and-play.
+// Roda 100% offline: nenhuma chamada de rede.
 // ════════════════════════════════════════════
 
 // ============================================
@@ -18,24 +17,10 @@ const GAME_CONFIG = {
     10: { outlaws: 4, missions: [3, 4, 4, 5, 5], twoFailsRequired: 3 },
 };
 
-const missionLore = (i) => I18N[LANG].missions_lore[i];
 
 // ============================================
-// ESTADO DO JOGO (OFFLINE)
+// ESTADO DO JOGO
 // ============================================
-
-
-// ============================================
-// INTEGRAÇÃO TUYA — LÂMPADA INTELIGENTE
-// ============================================
-const TUYA_WORKER = 'https://ancient-dream-9c02.victorcostv.workers.dev';
-function setLight(color) {
-    try {
-        if (typeof fetch === 'function') {
-            fetch(`${TUYA_WORKER}/?color=${color}`).catch(() => {});
-        }
-    } catch (e) { /* luz é opcional, nunca interrompe o jogo */ }
-}
 
 const state = {
     players: [], // { name, role: 'LAW'|'OUTLAW', isDelegado: bool, isBoss: bool }
@@ -72,17 +57,6 @@ const state = {
 };
 
 // ============================================
-// PERFIL E SALA ONLINE
-// ============================================
-
-let onlineProfile = { name: '', avatar: '' };
-let currentRoom = null;
-// MODO TELA: true se este dispositivo criou a sala (é o telão, não joga)
-let isScreenDevice = false;
-// Cronômetro do modo tela (referência para limpar)
-let screenTimerInterval = null;
-
-// ============================================
 // MENU LATERAL
 // ============================================
 
@@ -117,7 +91,7 @@ const SideMenu = {
 // ============================================
 
 const AudioAssets = {
-    bgm:     'sounds/bgm.mp3',
+    bgm:     'sounds/bgm.m4a',
     click:   'sounds/click.mp3',
     success: 'sounds/success.mp3',
     fail:    'sounds/fail.mp3',
@@ -175,6 +149,27 @@ const AudioManager = {
         if (btn) btn.innerText = this.isMuted ? '🔇 ' + t('sound_off') : '🔊 ' + t('sound_on');
     },
 
+    // O app saiu da tela (fechado, trocado de app, tela bloqueada): a música
+    // para, e volta quando ele reaparece. Se o iOS não deixar tocar sem um
+    // toque na tela, ela volta no próximo toque.
+    pausarPorFundo() {
+        if (this.bgm && !this.bgm.paused) {
+            this.bgm.pause();
+            this._pausadaPorFundo = true;
+        }
+    },
+
+    voltarDoFundo() {
+        if (!this._pausadaPorFundo) return;
+        this._pausadaPorFundo = false;
+        if (this.isMuted || !this.bgm) return;
+        this.bgm.play().catch(() => {
+            document.addEventListener('pointerdown', () => {
+                if (!this.isMuted) this.bgm.play().catch(() => {});
+            }, { once: true });
+        });
+    },
+
     playSFX(type) {
         if (this.isMuted) return;
         const sfx = this.sounds[type];
@@ -190,21 +185,98 @@ const AudioManager = {
 };
 
 // ============================================
+// HAPTICS
+// ============================================
+// Usa o plugin nativo do Capacitor quando empacotado; cai para
+// navigator.vibrate no navegador. Vira no-op onde nada existe.
+
+const Haptics = {
+    // Navegadores bloqueiam vibrate() enquanto não houver um toque real na página.
+    userGestured: false,
+
+    get plugin() {
+        return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
+    },
+
+    fire(nativeCall, pattern) {
+        if (AudioManager.isMuted) return;
+        const p = this.plugin;
+        if (p) {
+            nativeCall(p).catch(() => {});
+        } else if (this.userGestured && navigator.vibrate) {
+            navigator.vibrate(pattern);
+        }
+    },
+
+    impact(style, fallbackMs) {
+        this.fire(p => p.impact({ style }), fallbackMs);
+    },
+
+    notify(type, fallbackPattern) {
+        this.fire(p => p.notification({ type }), fallbackPattern);
+    },
+
+    tap()     { this.impact('LIGHT', 10); },
+    select()  { this.impact('MEDIUM', 20); },
+    thud()    { this.impact('HEAVY', 40); },
+    success() { this.notify('SUCCESS', [30, 60, 30]); },
+    failure() { this.notify('ERROR', [60, 40, 60, 40, 120]); }
+};
+
+// ============================================
+// BOOTSTRAP NATIVO (Capacitor)
+// ============================================
+// No navegador nada disso existe e a função não faz nada.
+
+function initNative() {
+    const plugins = window.Capacitor && window.Capacitor.Plugins;
+    if (!plugins) return;
+
+    if (plugins.StatusBar) {
+        // 'LIGHT' no Capacitor = feito para fundo claro, ou seja, texto ESCURO.
+        // O topo das telas é o degradê de areia.
+        plugins.StatusBar.setStyle({ style: 'LIGHT' }).catch(() => {});
+        plugins.StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
+    }
+    // A splash nativa é o mesmo degradê de areia. Só some depois do 'load'
+    // (fundo e fontes prontos), senão pisca a cor lisa entre as duas.
+    // Teclado: sem redimensionar a página nem rolá-la (capacitor.config.json);
+    // aqui só pegamos a altura para colar a barra de nomes em cima dele.
+    if (plugins.Keyboard) {
+        plugins.Keyboard.addListener('keyboardWillShow', (info) => {
+            Teclado.altura = info.keyboardHeight;
+            _posicionaBarra();
+        });
+        plugins.Keyboard.addListener('keyboardWillHide', () => { Teclado.altura = 0; });
+    }
+    if (plugins.SplashScreen) {
+        const hide = () => plugins.SplashScreen.hide().catch(() => {});
+        if (document.readyState === 'complete') hide();
+        else window.addEventListener('load', hide, { once: true });
+    }
+}
+
+// ============================================
 // UTILITÁRIOS GERAIS
 // ============================================
 
-function showScreen(screenId) {
+// Telas em que o brilho de vitória/derrota continua aceso. O site
+// acrescenta as telas online dele.
+const TELAS_DE_DESFECHO = ['screen-mesa', 'screen-mission-result', 'screen-game-over'];
+
+// direcao 'volta' faz a tela entrar pela esquerda (botões de voltar).
+function showScreen(screenId, direcao) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById(screenId);
-    if (target) target.classList.add('active');
-    const coloredScreens = [
-        'screen-online-role-reveal', 'screen-role-reveal',
-        'screen-mission-result', 'screen-online-mission-result',
-        'screen-game-over', 'screen-online-game-over'
-    ];
-    if (!coloredScreens.includes(screenId)) {
+    if (target) {
+        target.classList.toggle('volta', direcao === 'volta');
+        target.classList.add('active');
+    }
+    if (!TELAS_DE_DESFECHO.includes(screenId)) {
         document.body.classList.remove('bg-winner-law', 'bg-winner-outlaw');
     }
+    // A cena da mesa é imersiva: sem gaveta por cima dela.
+    document.body.classList.toggle('scene-mode', screenId === 'screen-mesa');
     updateTension(screenId);
     SideMenu.close();
 }
@@ -235,25 +307,36 @@ function fadeToBlack(callback) {
     }, 1100);
 }
 
-// ── Confirmação de identidade ("Você é fulano?") ──
-// Usada antes de revelar cartas, executar missões e duelos.
-// Evita o erro clássico do pass-and-play: a pessoa errada abrir a tela.
-function showPassConfirm(targetName, titleKey, onYes) {
+// ── A parede do saloon ──
+// Uma frase em cima, um título grande, um aviso e um único botão, com a
+// mesma cara do primeiro ato da mesa. Serve para passar o celular (duelo)
+// e para segurar o resultado da missão até todos estarem olhando.
+function showParede(o) {
     showScreen('screen-pass-device');
-    const stage = document.querySelector('#screen-pass-device .pass-stage');
-    document.getElementById('pass-device-title').innerText = t(titleKey || 'pass_to');
-    document.getElementById('pass-device-target').innerText = targetName;
-    document.getElementById('pass-device-question').innerHTML = t('are_you', { name: targetName });
-    const hint = document.getElementById('pass-hint');
-    hint.innerText = '';
+    document.getElementById('pass-device-title').innerText = o.eyebrow;
+    document.getElementById('pass-device-target').innerText = o.titulo;
+    document.getElementById('pass-device-note').innerText = o.nota;
 
-    document.getElementById('btn-confirm-no').onclick = () => {
-        stage.classList.remove('shake');
-        void stage.offsetWidth; // reinicia a animação
-        stage.classList.add('shake');
-        hint.innerText = t('pass_hint', { name: targetName });
-    };
-    document.getElementById('btn-reveal-action').onclick = onYes;
+    const velho = document.getElementById('btn-reveal-action');
+    const btn = velho.cloneNode(true);
+    velho.parentNode.replaceChild(btn, velho);
+    btn.innerText = o.botao;
+    btn.onclick = o.aoTocar;
+
+    // O botão aparece depois de um instante: dá tempo do celular trocar de
+    // mão, e evita que um toque duplo pule a tela sem ninguém ver.
+    btn.classList.add('surgindo');
+    setTimeout(() => btn.classList.remove('surgindo'), REDUCED_MOTION ? 0 : (o.espera || 2000));
+}
+
+function showPassConfirm(targetName, titleKey, onYes) {
+    showParede({
+        eyebrow: t(titleKey || 'pass_to'),
+        titulo:  targetName,
+        nota:    t('no_peeking'),
+        botao:   t('im_name', { name: targetName }),
+        aoTocar: onYes
+    });
 }
 
 // ============================================
@@ -263,13 +346,15 @@ function showPassConfirm(targetName, titleKey, onYes) {
 document.addEventListener('DOMContentLoaded', () => {
 
     applyLanguage();
+    initNative();
+
+    document.addEventListener('pointerdown', () => { Haptics.userGestured = true; }, { once: true });
 
     // Botão do menu lateral (leque de cartas)
     const menuBtn = document.getElementById('btn-hamburger');
     if (menuBtn) {
         menuBtn.onclick = (e) => {
             e.stopPropagation();
-            AudioManager.playSFX('click');
             SideMenu.toggle();
         };
     }
@@ -293,13 +378,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('menu-home-btn').onclick = () => {
         SideMenu.close();
-        if (currentRoom) {
-            cleanupRoom(currentRoom);
-            currentRoom = null;
-        }
-        resetOfflineState();
-        showScreen('screen-mode-select');
+        resetGameState();
+        updateSetupUI();
+        showScreen('screen-setup-players');
     };
+
+    // Música para quando o app sai da tela. visibilitychange cobre o WebView;
+    // pause/resume são os avisos do Capacitor quando o app vai para o fundo.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) AudioManager.pausarPorFundo();
+        else AudioManager.voltarDoFundo();
+    });
+    document.addEventListener('pause',  () => AudioManager.pausarPorFundo());
+    document.addEventListener('resume', () => AudioManager.voltarDoFundo());
+    window.addEventListener('pagehide', () => AudioManager.pausarPorFundo());
 
     // Troca de idioma (PT 🇧🇷 / EN 🇺🇸)
     document.querySelectorAll('.lang-opt').forEach(btn => {
@@ -309,173 +401,42 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
-    // Listener global de cliques (sons de feedback: fichas e cliques)
+    // Listener global de cliques: todo botão vibra, mas o engatilhar da arma
+    // só toca nos momentos marcados com data-som="arma" (abrir a mesa e
+    // desafiar para o duelo). Em todo clique ele cansava rápido.
     document.addEventListener('click', (e) => {
         const sel = e.target.closest('.selectable-item');
         if (sel) {
             AudioManager.playSFX('chip');
+            Haptics.select();
             return;
         }
         const target = e.target.closest('.btn, .mode-card, .info-btn, button, input[type="submit"], .custom-checkbox');
         if (target && target.id !== 'btn-hamburger' && !target.closest('#side-menu-panel')) {
-            AudioManager.playSFX('click');
+            if (target.dataset.som === 'arma') AudioManager.playSFX('click');
+            Haptics.tap();
         }
     }, true);
 
-    // ---- Link direto de sala: saloongame.com.br/#CODIGO ----
-    // Se a URL tem um código no hash, guarda para entrar direto na sala.
-    let pendingRoomCode = null;
-    const hashCode = (location.hash || '').replace('#', '').trim().toUpperCase();
-    if (hashCode && /^[A-Z0-9]{4,8}$/.test(hashCode)) {
-        pendingRoomCode = hashCode;
-    }
-    window.getPendingRoomCode = () => pendingRoomCode;
-    window.clearPendingRoomCode = () => { pendingRoomCode = null; };
+    showScreen('screen-splash');
 
-    // Se veio por um link de sala (QR code), pula o splash e vai direto à escolha
-    // de foto/nome. O áudio inicia quando a pessoa confirma o perfil.
-    if (pendingRoomCode) {
-        showHamburger();
-        showScreen('screen-online-profile');
-    } else {
-        showScreen('screen-splash');
-    }
-
-    // ---- Splash: primeiro toque inicia BGM e mostra o menu ----
+    // ---- Splash: primeiro toque inicia BGM e abre direto o setup ----
     document.getElementById('screen-splash').onclick = () => {
         AudioManager.startBGM();
         showHamburger();
-        setLight('orange');
-        showScreen('screen-mode-select');
+        updateSetupUI();
+        showScreen('screen-setup-players');
     };
 
     // ---- Navegação de telas ----
-
-    // Modo offline
-    document.getElementById('btn-mode-offline').onclick   = () => showScreen('screen-setup-players');
-    document.getElementById('btn-go-to-advanced').onclick = () => showScreen('screen-setup-advanced');
-    document.getElementById('btn-back-to-players').onclick = () => showScreen('screen-setup-players');
-    document.getElementById('btn-back-main').onclick       = () => showScreen('screen-mode-select');
-
-    // Modo online
-    document.getElementById('btn-mode-online').onclick        = () => showScreen('screen-online-profile');
-    document.getElementById('btn-back-from-profile').onclick  = () => showScreen('screen-mode-select');
-    document.getElementById('btn-back-to-mode').onclick       = () => showScreen('screen-mode-select');
-
-    // ---- Avatar (Carrossel) ----
-
-    const avatars = [
-        'avatars/avatar1.png', 'avatars/avatar2.png', 'avatars/avatar3.png', 'avatars/avatar4.png',
-        'avatars/avatar5.png', 'avatars/avatar6.png', 'avatars/avatar7.png', 'avatars/avatar8.png'
-    ];
-    let avatarIndex = 0;
-    onlineProfile.avatar = avatars[0];
-
-    document.getElementById('avatar-prev').onclick = (e) => {
-        e.stopPropagation();
-        avatarIndex = (avatarIndex - 1 + avatars.length) % avatars.length;
-        document.getElementById('avatar-display').innerHTML = `<img src="${avatars[avatarIndex]}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-        onlineProfile.avatar = avatars[avatarIndex];
+    document.getElementById('btn-go-to-advanced').onclick  = () => {
+        refreshExtraCards();
+        showScreen('screen-setup-advanced');
     };
-
-    document.getElementById('avatar-next').onclick = (e) => {
-        e.stopPropagation();
-        avatarIndex = (avatarIndex + 1) % avatars.length;
-        document.getElementById('avatar-display').innerHTML = `<img src="${avatars[avatarIndex]}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-        onlineProfile.avatar = avatars[avatarIndex];
-    };
-
-    // ---- Perfil Online ----
-
-    document.getElementById('online-profile-form').onsubmit = (e) => {
-        e.preventDefault();
-        const nameInput = document.getElementById('online-name-input').value.trim();
-        if (!nameInput) return alert(t('fill_name'));
-        onlineProfile.name = nameInput;
-        // Garante que o áudio comece (se a pessoa veio direto pelo QR, sem passar pelo splash)
-        AudioManager.startBGM();
-        setLight('orange');
-        // Se veio por um link de sala (#CODIGO), entra direto nela
-        const pending = window.getPendingRoomCode && window.getPendingRoomCode();
-        if (pending) {
-            window.clearPendingRoomCode();
-            joinRoomByCode(pending);
-        } else {
-            showScreen('screen-online-lobby');
-        }
-    };
-
-    // ---- Criar Sala ----
-
-    document.getElementById('btn-create-room').onclick = () => {
-        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-        const roomRef = db.ref('rooms/' + code);
-        isScreenDevice = false; // sala normal; o modo Party é ligado nas configurações
-        roomRef.set({
-            host: onlineProfile.name,
-            hostAvatar: onlineProfile.avatar,
-            screenMode: false,
-            players: {
-                [onlineProfile.name]: {
-                    name: onlineProfile.name,
-                    avatar: onlineProfile.avatar,
-                    isHost: true
-                }
-            },
-            status: 'waiting',
-            extras: { roles: false, revolver: false, farsante: false }
-        }).then(() => {
-            currentRoom = code;
-            showScreen('screen-online-waiting');
-            listenToRoom(code);
-        });
-    };
-
-    // ---- Entrar em Sala ----
-
-    document.getElementById('btn-join-room').onclick = () => {
-        const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-        if (!code) return alert(t('type_code'));
-        joinRoomByCode(code);
-    };
+    document.getElementById('btn-back-to-players').onclick = () => showScreen('screen-setup-players', 'volta');
 });
 
-// Entra numa sala pelo código (usado pelo botão e pelo link/QR de sala)
-function joinRoomByCode(code) {
-    code = (code || '').trim().toUpperCase();
-    if (!code) return;
-    db.ref('rooms/' + code).once('value').then(snapshot => {
-        if (!snapshot.exists()) return alert(t('room_not_found'));
-        const room = snapshot.val();
-        if (room.status !== 'waiting') return alert(t('match_started'));
-        db.ref('rooms/' + code + '/players/' + onlineProfile.name).set({
-            name: onlineProfile.name,
-            avatar: onlineProfile.avatar,
-            isHost: false
-        }).then(() => {
-            currentRoom = code;
-            showScreen('screen-online-waiting');
-            listenToRoom(code);
-        });
-    });
-}
-
-// ============================================
-// LIMPEZA DE SALA
-// ============================================
-
-function cleanupRoom(code) {
-    if (!code) return;
-    db.ref('rooms/' + code + '/players/' + onlineProfile.name).remove();
-    db.ref('rooms/' + code).off();
-}
-
-function cleanupRoomEntirely(code) {
-    if (!code) return;
-    db.ref('rooms/' + code).remove();
-}
-
-function resetOfflineState() {
+function resetGameState() {
     state.players.forEach(p => { p.role = null; p.isBoss = false; p.isDelegado = false; p.isEscrivao = false; p.isFalsificador = false; });
     state.currentMissionIndex = 0;
     state.rejectedTeams = 0;
@@ -491,51 +452,219 @@ function resetOfflineState() {
 }
 
 // ============================================
-// OFFLINE — SETUP DE JOGADORES
+// SETUP DE JOGADORES
 // ============================================
 
-const TRASH_SVG = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7b2d35" stroke-width="2.4" stroke-linecap="round"><path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13M10 11v6M14 11v6"/></svg>`;
+// Lixeira cheia (tampa + corpo, frisos vazados), na cor do botão (currentColor).
+const TRASH_SVG = `<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">`
+    + `<path fill="currentColor" d="M9.2 2.8h5.6a1.2 1.2 0 0 1 1.2 1.2v.6h3.3a1.3 1.3 0 0 1 0 2.6H4.7a1.3 1.3 0 0 1 0-2.6H8v-.6a1.2 1.2 0 0 1 1.2-1.2z"/>`
+    + `<path fill="currentColor" d="M5.7 8.6h12.6l-.95 11.1a2.6 2.6 0 0 1-2.6 2.4H9.25a2.6 2.6 0 0 1-2.6-2.4z"/>`
+    + `<path d="M10 11.6v6.8M14 11.6v6.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 
-document.getElementById('add-player-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const input = document.getElementById('player-name-input');
-    const name = input.value.trim();
-    if (!name) return;
-    if (state.players.length >= 10) return showError(t('max_players'));
-    if (state.players.find(p => p.name.toLowerCase() === name.toLowerCase())) return showError(t('name_exists'));
-    state.players.push({ name, role: null });
-    input.value = "";
-    input.focus();
-    updateSetupUI();
-});
+// Cada jogador é uma linha da lista, na ordem em que estão sentados, e a
+// última está sempre vazia. Os nomes NÃO são digitados dentro da lista:
+// tocar numa linha abre uma barra de texto colada em cima do teclado, e a
+// linha só espelha o que é digitado. Como a caixa em foco fica sempre acima
+// do teclado, o iOS nunca precisa empurrar a tela para mostrá-la.
+const MAX_JOGADORES = 10;
+const setupLista = () => document.getElementById('player-setup-list');
+const barraNome  = () => document.getElementById('barra-nome');
+const campoNome  = () => document.getElementById('player-name-input');
+let linhaEditada = null;
 
-function updateSetupUI() {
-    const list = document.getElementById('player-setup-list');
-    list.innerHTML = '';
-    state.players.forEach((p, idx) => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span>${p.name}</span> <button onclick="removePlayer(${idx})" aria-label="Remover">${TRASH_SVG}</button>`;
-        list.appendChild(li);
-    });
-    const btnGoNext = document.getElementById('btn-go-to-advanced');
-    if (state.players.length >= 5 && state.players.length <= 10) {
-        btnGoNext.disabled = false;
-        showError("");
-    } else {
-        btnGoNext.disabled = true;
-        if (state.players.length > 0) showError(t('min_players'));
+function _linhaJogador(nome) {
+    const li = document.createElement('li');
+    li.className = 'linha-jogador';
+    li.innerHTML = `<span class="nome"></span><button class="lixeira" aria-label="Remover">${TRASH_SVG}</button>`;
+    li.querySelector('.nome').textContent = nome || '';
+    return li;
+}
+const _nomeDa = (li) => li.querySelector('.nome').textContent.trim();
+
+// Tira a linha com animação; ela só sai do DOM quando a animação acaba.
+function _removeLinha(li) {
+    if (li === linhaEditada) linhaEditada = null;
+    if (REDUCED_MOTION) { li.remove(); return; }
+    li.classList.add('some');
+    li.addEventListener('animationend', () => li.remove(), { once: true });
+}
+
+// Garante exatamente uma linha vazia no fim (a não ser que a mesa esteja cheia).
+function _garanteLinhaVazia(animar) {
+    const lista = setupLista();
+    const cheias = lista.querySelectorAll('.linha-jogador:not(.vazia):not(.some)').length;
+    let vazia = lista.querySelector('.linha-jogador.vazia:not(.some)');
+    if (cheias >= MAX_JOGADORES) {
+        if (vazia) _removeLinha(vazia);
+        return;
+    }
+    if (!vazia) {
+        vazia = _linhaJogador('');
+        vazia.classList.add('vazia');
+        if (animar) vazia.classList.add('nasce');
+        lista.appendChild(vazia);
+    }
+    if (vazia !== linhaEditada) {
+        const nome = vazia.querySelector('.nome');
+        nome.setAttribute('data-i18n', 'name_ph');
+        nome.textContent = t('name_ph');
     }
 }
 
-function removePlayer(idx) {
-    state.players.splice(idx, 1);
-    updateSetupUI();
+// Lê os nomes das linhas, marca repetidos e libera o "Próximo".
+function _sincronizaSetup() {
+    const linhas = [...setupLista().querySelectorAll('.linha-jogador:not(.vazia):not(.some)')];
+    const nomes = linhas.map(_nomeDa);
+    const conta = {};
+    nomes.forEach(n => { if (n) conta[n.toLowerCase()] = (conta[n.toLowerCase()] || 0) + 1; });
+    let repetido = false;
+    linhas.forEach((li, i) => {
+        const dup = !!nomes[i] && conta[nomes[i].toLowerCase()] > 1;
+        li.classList.toggle('repetido', dup);
+        repetido = repetido || dup;
+    });
+
+    state.players = nomes.filter(Boolean).map(name => ({ name, role: null }));
+    const n = state.players.length;
+    document.getElementById('btn-go-to-advanced').disabled = repetido || n < 5 || n > MAX_JOGADORES;
+    if (repetido)           showError(t('name_exists'));
+    else if (n > 0 && n < 5) showError(t('min_players'));
+    else                     showError('');
 }
+
+// Monta a lista inteira a partir de state.players (ao entrar na tela).
+function updateSetupUI() {
+    fecharBarraNome();
+    const lista = setupLista();
+    lista.innerHTML = '';
+    state.players.forEach(p => lista.appendChild(_linhaJogador(p.name)));
+    _garanteLinhaVazia();
+    _sincronizaSetup();
+}
+
+// ── A barra de digitação, colada em cima do teclado ──
+// No app, o plugin de teclado informa a altura exata; no navegador, o
+// visualViewport encolhe quando o teclado virtual aparece.
+const Teclado = { altura: 0 };
+
+function _posicionaBarra() {
+    const barra = barraNome();
+    if (!barra.classList.contains('aberta')) return;
+    let base;   // onde o teclado começa (ou o pé da tela, sem teclado)
+    if (Teclado.altura > 0)        base = window.innerHeight - Teclado.altura;
+    else if (window.visualViewport) base = visualViewport.offsetTop + visualViewport.height;
+    else                            base = window.innerHeight;
+    barra.style.setProperty('--barra-y', (base - barra.offsetHeight) + 'px');
+}
+
+function editarLinha(li) {
+    if (!li) return;
+    if (linhaEditada && linhaEditada !== li) linhaEditada.classList.remove('editando');
+    linhaEditada = li;
+    li.classList.add('editando');
+    const campo = campoNome();
+    if (li.classList.contains('vazia')) {
+        campo.value = '';
+        const nome = li.querySelector('.nome');       // só o cursor piscando
+        nome.removeAttribute('data-i18n');
+        nome.textContent = '';
+    } else {
+        campo.value = _nomeDa(li);
+    }
+    const barra = barraNome();
+    if (!barra.classList.contains('aberta')) {
+        barra.classList.add('aberta');
+        _posicionaBarra();
+    }
+    campo.focus();   // precisa acontecer dentro do toque, senão o iOS não abre o teclado
+}
+
+// Encerra a edição: linha de jogador que ficou sem nome sai da lista.
+function _confirmaLinha() {
+    const li = linhaEditada;
+    if (!li) return;
+    li.classList.remove('editando');
+    linhaEditada = null;
+    if (li.classList.contains('vazia')) {
+        _garanteLinhaVazia();                      // devolve o "Nome do jogador"
+    } else if (!_nomeDa(li)) {
+        _removeLinha(li);
+        _garanteLinhaVazia(true);
+    }
+    _sincronizaSetup();
+}
+
+function fecharBarraNome() {
+    _confirmaLinha();
+    const barra = barraNome();
+    if (barra) barra.classList.remove('aberta');
+}
+
+// Com a barra aberta, tocar noutra linha não pode tirar o foco do campo —
+// senão o teclado fecha e abre de novo.
+setupLista().addEventListener('pointerdown', (e) => {
+    if (linhaEditada && e.target.closest('.linha-jogador') && !e.target.closest('.lixeira')) e.preventDefault();
+});
+
+setupLista().addEventListener('click', (e) => {
+    const li = e.target.closest('.linha-jogador');
+    if (!li || li.classList.contains('some')) return;
+    if (e.target.closest('.lixeira')) {
+        _removeLinha(li);
+        _garanteLinhaVazia(true);
+        _sincronizaSetup();
+        return;
+    }
+    if (li !== linhaEditada) {
+        _confirmaLinha();
+        editarLinha(li);
+    }
+});
+
+// O que é digitado na barra aparece na linha. Começou a digitar na linha
+// vazia, ela vira jogador e nasce outra embaixo.
+campoNome().addEventListener('input', (e) => {
+    let li = linhaEditada;
+    if (!li) {   // digitou sem tocar numa linha (teclado físico): vai para a linha nova
+        li = setupLista().querySelector('.linha-jogador.vazia:not(.some)');
+        if (!li) return;
+        linhaEditada = li;
+        li.classList.add('editando');
+    }
+    const texto = e.target.value;
+    const nome = li.querySelector('.nome');
+    if (li.classList.contains('vazia')) {
+        if (!texto.trim()) return;
+        li.classList.remove('vazia');
+        nome.removeAttribute('data-i18n');
+        _garanteLinhaVazia(true);
+    }
+    nome.textContent = texto;
+    _sincronizaSetup();
+});
+
+// "Próximo" do teclado: passa para a linha de baixo com o mesmo campo em
+// foco, então o teclado não pisca. Na última linha, fecha.
+campoNome().addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    let prox = linhaEditada ? linhaEditada.nextElementSibling : null;
+    while (prox && prox.classList.contains('some')) prox = prox.nextElementSibling;
+    _confirmaLinha();
+    if (prox) { editarLinha(prox); return; }
+    // Última linha: fecha a barra de vez — não depende de o campo perder o foco.
+    fecharBarraNome();
+    campoNome().blur();
+});
+
+campoNome().addEventListener('blur', () => fecharBarraNome());
+document.getElementById('barra-ok').addEventListener('click', () => { fecharBarraNome(); campoNome().blur(); });
+if (window.visualViewport) window.visualViewport.addEventListener('resize', _posicionaBarra);
 
 document.getElementById('btn-start-game').addEventListener('click', () => initializeGame());
 
 // ============================================
-// OFFLINE — INICIALIZAÇÃO DA PARTIDA
+// INICIALIZAÇÃO DA PARTIDA
 // ============================================
 
 function initializeGame() {
@@ -602,7 +731,7 @@ function initializeGame() {
 }
 
 // ============================================
-// OFFLINE — LOOP DE INTERAÇÕES (PASS-AND-PLAY)
+// LOOP DE INTERAÇÕES (PASS-AND-PLAY)
 // ============================================
 
 function startInteractionLoop() {
@@ -621,6 +750,12 @@ function startInteractionLoop() {
     }
 
     const name = state.players[targetIndex].name;
+    // A revelação tem cena própria: ela já começa com o "passe o celular"
+    // na parede do saloon e desce até a mesa.
+    if (state.pendingAction === 'REVEAL' || state.pendingAction === 'MISSION') {
+        executeInteraction(targetIndex);
+        return;
+    }
     // Movimento de câmera sobre a mesa até o próximo jogador
     cinematicTransition(() => {
         showPassConfirm(name, 'pass_to', () => executeInteraction(targetIndex));
@@ -640,11 +775,11 @@ function endInteractionLoop() {
 }
 
 // ============================================
-// OFFLINE — REVELAÇÃO DE IDENTIDADE (A CARTA)
+// REVELAÇÃO DE IDENTIDADE (A CARTA)
 // ============================================
 
 // Monta os dados que a carta vai exibir para um jogador offline
-function buildOfflineRoleData(playerIdx) {
+function buildRoleData(playerIdx) {
     const p = state.players[playerIdx];
     let suitKey = p.role;
     if (p.isDelegado) suitKey = 'DELEGADO';
@@ -704,26 +839,15 @@ function buildOfflineRoleData(playerIdx) {
 }
 
 function executeRevealPhase(playerIdx) {
-    showScreen('screen-role-reveal');
-    const roleData = buildOfflineRoleData(playerIdx);
-
-    runCardScene({
-        card:    'reveal-card',
-        inner:   'reveal-card-inner',
-        face:    'role-card-display',
-        btnFlip: 'btn-flip-card',
-        btnDone: 'btn-role-understood'
-    }, roleData, {
-        doneLabelKey: 'hide_card',
-        onDone: () => {
-            state.currentPlayerInteractionIndex++;
-            startInteractionLoop();
-        }
+    showScreen('screen-mesa');
+    runRevealScene(buildRoleData(playerIdx), state.players[playerIdx].name, () => {
+        state.currentPlayerInteractionIndex++;
+        startInteractionLoop();
     });
 }
 
 // ============================================
-// OFFLINE — TABULEIRO
+// TABULEIRO
 // ============================================
 
 function startBoardTurn() {
@@ -737,9 +861,7 @@ function startBoardTurn() {
     document.getElementById('current-sheriff-name').innerText = sheriff.name;
     document.getElementById('mission-size-req').innerText = reqSize;
     document.getElementById('current-mission-num').innerText = state.currentMissionIndex + 1;
-    document.getElementById('mission-lore').innerText = missionLore(state.currentMissionIndex);
     document.getElementById('team-selection-area').classList.remove('hidden');
-    document.getElementById('waiting-team-area').classList.add('hidden');
 
     const teamList = document.getElementById('team-select-list');
     teamList.innerHTML = '';
@@ -767,6 +889,9 @@ function updateBoardUI() {
         newly
     );
 
+    // Zerado, o placar de rejeições é só ruído: aparece na primeira equipe
+    // rejeitada e some de novo quando uma equipe for aprovada.
+    document.querySelector('#screen-board .reject-track').classList.toggle('hidden', state.rejectedTeams === 0);
     document.getElementById('reject-count').innerText = state.rejectedTeams;
     const rDots = document.getElementById('reject-dots-container');
     rDots.innerHTML = '';
@@ -799,7 +924,7 @@ function validateTeamSubmitBtn(reqSize) {
 }
 
 // ============================================
-// OFFLINE — VOTAÇÃO EM GRUPO
+// VOTAÇÃO EM GRUPO
 // ============================================
 
 function showGroupVotingPhase() {
@@ -836,15 +961,14 @@ function processGroupVote(approved) {
 }
 
 // ============================================
-// OFFLINE — EXECUÇÃO DE MISSÃO
+// EXECUÇÃO DE MISSÃO
 // ============================================
 
 function executeMissionPhase(playerIdx) {
-    showScreen('screen-mission');
+    showScreen('screen-mesa');
     const p = state.players[playerIdx];
-    document.getElementById('mission-player-name').innerText = p.name;
 
-    renderChipTable({
+    runMissionScene(p.name, {
         rowId: 'mission-chip-row',
         warnId: 'mission-law-warning',
         confirmId: 'mission-confirm',
@@ -867,9 +991,17 @@ function submitMission(isSuccess) {
 }
 
 function showSuspenseScreen() {
-    // O suspense agora está embutido na própria tela de resultado
-    // (as fichas caem com rufar antes da vermelha). Vai direto.
-    processMission();
+    // Pausa antes de revelar: o último da equipe devolve o celular para a
+    // mesa, e alguém toca quando todos estiverem olhando. O suspense das
+    // fichas caindo continua na própria tela de resultado.
+    showParede({
+        eyebrow: t('mission_ready'),
+        titulo:  t('mission_n', { n: state.currentMissionIndex + 1 }),
+        nota:    t('mission_ready_note'),
+        botao:   t('see_result'),
+        espera:  1200,
+        aoTocar: processMission
+    });
 }
 
 function processMission() {
@@ -879,7 +1011,7 @@ function processMission() {
     const missionSuccess = sabotages < failsRequired;
     state.missionResults[state.currentMissionIndex] = missionSuccess;
     state._justResolvedMission = state.currentMissionIndex;
-    setTimeout(() => setLight(missionSuccess ? 'blue' : 'red'), 900);
+    setTimeout(() => missionSuccess ? Haptics.success() : Haptics.failure(), 900);
 
     playMissionResult({
         rowId: 'result-chip-row',
@@ -902,8 +1034,6 @@ function processMission() {
                 return endGame(t('win_outlaw_missions'), "OUTLAW");
             }
 
-            // volta ao neutro entre missões
-            setLight('orange');
             if ((state.currentMissionIndex === 1 || state.currentMissionIndex === 2) && state.extras.revolver) {
                 startDuelChoosePhase();
             } else {
@@ -916,7 +1046,7 @@ function processMission() {
 }
 
 // ============================================
-// OFFLINE — SISTEMA DE DUELO
+// SISTEMA DE DUELO
 // ============================================
 
 function startDuelChoosePhase() {
@@ -991,6 +1121,7 @@ function showDuelSuspense() {
 function processDuelResult() {
     if (state.duel.shooterAction || state.duel.targetAction) {
         AudioManager.playSFX('shot'); // momento público: o resultado revela quem atirou
+        Haptics.thud();
     }
     showScreen('screen-duel-result');
     const sShoot = state.duel.shooterAction;
@@ -1044,7 +1175,7 @@ function finishDuelEntirely() {
 }
 
 // ============================================
-// OFFLINE — ASSASSINATO DO CHEFE
+// ASSASSINATO DO CHEFE
 // ============================================
 
 function showBossAssassination() {
@@ -1070,18 +1201,18 @@ function showBossAssassination() {
     });
 
     document.getElementById('btn-boss-shoot').onclick = () => {
+        AudioManager.playSFX('shot');
+        Haptics.thud();
         if (targetSelected === state.delegadoIndex) {
-            AudioManager.playSFX('shot');
             endGame(t('win_boss_shot'), "OUTLAW");
         } else {
-            AudioManager.playSFX('shot');
             endGame(t('win_boss_missed'), "LAW");
         }
     };
 }
 
 // ============================================
-// OFFLINE — FIM DE JOGO
+// FIM DE JOGO
 // ============================================
 
 function endGame(reason, winner) {
@@ -1092,11 +1223,11 @@ function endGame(reason, winner) {
     if (winner === 'LAW') {
         AudioManager.playSFX('success');
         document.body.classList.add('bg-winner-law');
-        setLight('blue');
+        Haptics.success();
     } else if (winner === 'OUTLAW') {
         AudioManager.playSFX('fail');
         document.body.classList.add('bg-winner-outlaw');
-        setLight('red');
+        Haptics.failure();
     }
 
     const lawUl = document.getElementById('final-law-list');
@@ -1118,7 +1249,7 @@ function endGame(reason, winner) {
     });
 
     document.getElementById('btn-play-again').onclick = () => {
-        resetOfflineState();
+        resetGameState();
         updateSetupUI();
         showScreen('screen-setup-players');
     };
@@ -1130,30 +1261,38 @@ function endGame(reason, winner) {
 
 let lastScreenId = 'screen-splash';
 
-// Farsante exige Distintivo (Delegado + Chefe). Só liga se roles estiver ativo.
-function toggleFarsante() {
-    const rolesOn = document.getElementById('chk-roles').checked;
-    const fars = document.getElementById('chk-farsante');
-    if (!rolesOn) {
-        // pisca a card do Distintivo avisando o requisito
-        const distCard = document.querySelector('.mode-card');
-        if (distCard) {
-            distCard.classList.add('shake-req');
-            setTimeout(() => distCard.classList.remove('shake-req'), 500);
-        }
-        fars.checked = false;
+function toggleExtra(nome) {
+    const chk = document.getElementById('chk-' + nome);
+
+    // Farsante depende do Distintivo: sem ele, sacode o card do requisito.
+    if (nome === 'farsante' && !document.getElementById('chk-roles').checked) {
+        const distCard = document.getElementById('card-roles');
+        distCard.classList.add('shake-req');
+        setTimeout(() => distCard.classList.remove('shake-req'), 500);
+        chk.checked = false;
+        refreshExtraCards();
         return;
     }
-    fars.checked = !fars.checked;
+
+    chk.checked = !chk.checked;
+
+    // Desligar o Distintivo desliga a Farsante junto.
+    if (nome === 'roles' && !chk.checked) {
+        document.getElementById('chk-farsante').checked = false;
+    }
+    refreshExtraCards();
 }
 
-// Se o Distintivo for desligado, a Farsante desliga junto.
-function syncFarsanteWithRoles() {
+function refreshExtraCards() {
     const rolesOn = document.getElementById('chk-roles').checked;
-    if (!rolesOn) {
-        const fars = document.getElementById('chk-farsante');
-        if (fars) fars.checked = false;
-    }
+
+    ['roles', 'farsante', 'revolver'].forEach(nome => {
+        const card = document.getElementById('card-' + nome);
+        card.classList.toggle('selected', document.getElementById('chk-' + nome).checked);
+    });
+
+    // O aviso "Requer Distintivo" só faz sentido enquanto o requisito não foi atendido.
+    document.getElementById('card-farsante').classList.toggle('disabled-card', !rolesOn);
 }
 
 function showTutorial(type) {
@@ -1164,1265 +1303,82 @@ function showTutorial(type) {
     const contentDiv = document.getElementById('tutorial-content');
     const dict = I18N[LANG].tutorials || I18N.pt.tutorials;
     contentDiv.innerHTML = dict[type] || '';
+    const titulos = { GENERAL: 'how_to_play', DELEGADO: 'extra_roles', FARSANTE: 'extra_farsante', REVOLVER: 'extra_revolver' };
+    document.getElementById('tutorial-title').innerText = t(titulos[type] || 'how_to_play');
+
+    // As cartinhas usam a moldura e o ícone das cartas de verdade, e começam
+    // com o verso para cima: viram quando aparecem na tela.
+    const DA_LEI = ['LAW', 'DELEGADO', 'ESCRIVAO'];
+    contentDiv.querySelectorAll('.mini-card[data-papel]').forEach(c => {
+        const papel = c.dataset.papel;
+        c.classList.add(DA_LEI.includes(papel) ? 'team-law' : 'team-outlaw');
+        c.innerHTML = `<div class="mini-inner">`
+            + `<div class="mini-face mini-frente"><div class="face-frame"></div><span class="mini-icone">${suitSVG(papel)}</span>${c.innerHTML}</div>`
+            + `<div class="mini-face mini-verso"></div></div>`;
+    });
+    // E as fichas, as mesmas do tabuleiro. "lei:2" = missão de 2 já cumprida
+    // (vira do verso numerado para o resultado), "3" = a jogar, "3!" = a atual.
+    contentDiv.querySelectorAll('.chips-row[data-fichas]').forEach(row => {
+        row.innerHTML = row.dataset.fichas.split(' ').map((f, i) => {
+            const [tipo, n] = f.split(':');
+            if (n) return `<div class="tut-ficha resolvida" style="--i:${i}"><div class="tf-inner">`
+                + `<div class="tf-lado">${chipBackNumbered(n)}</div>`
+                + `<div class="tf-lado tf-frente">${_chipArt(tipo)}</div></div></div>`;
+            const atual = tipo.endsWith('!');
+            return `<div class="tut-ficha${atual ? ' atual' : ''}" style="--i:${i}">${chipBackNumbered(tipo.replace('!', ''))}</div>`;
+        }).join('');
+    });
+    contentDiv.scrollTop = 0;
+    _revelaAoRolar(contentDiv);
     showScreen('screen-tutorial');
+    _avisoRolar(contentDiv);
+}
+
+// Cada parte do tutorial anima quando entra na tela ao rolar. As que já
+// aparecem juntas entram em cascata (--atraso).
+let _tutObservador = null;
+function _revelaAoRolar(contentDiv) {
+    const alvos = contentDiv.querySelectorAll('.tut-sub, .card, .teams, .chips-row, .chip-legenda, .trilha, .passo, .alerta, .nota');
+    alvos.forEach(el => el.classList.add('revela'));
+    if (_tutObservador) _tutObservador.disconnect();
+    if (REDUCED_MOTION || !('IntersectionObserver' in window)) {
+        alvos.forEach(el => el.classList.add('visivel'));
+        return;
+    }
+    _tutObservador = new IntersectionObserver((entradas) => {
+        let k = 0;
+        entradas.forEach(e => {
+            if (!e.isIntersecting) return;
+            e.target.style.setProperty('--atraso', (k++ * 0.09) + 's');
+            e.target.classList.add('visivel');
+            _tutObservador.unobserve(e.target);
+        });
+    }, { root: contentDiv, threshold: 0.15, rootMargin: '0px 0px -6% 0px' });
+    alvos.forEach(el => _tutObservador.observe(el));
+}
+
+// Quem abre o tutorial não sabe que tem mais embaixo: a pílula "deslize
+// para ver mais" aparece logo que ele abre e volta sempre que a pessoa para
+// de rolar com conteúdo ainda por ver (depois das fichas, por exemplo).
+// Some enquanto rola e no fim da página. Tocar nela rola um pedaço.
+function _avisoRolar(contentDiv) {
+    const aviso = document.getElementById('tut-rolar');
+    const temMais = () => contentDiv.scrollHeight - contentDiv.clientHeight - contentDiv.scrollTop > 40;
+    const mostraDaquiA = (ms) => {
+        clearTimeout(aviso._timer);
+        aviso._timer = setTimeout(() => {
+            if (temMais()) aviso.classList.remove('escondida');
+        }, REDUCED_MOTION ? 0 : ms);
+    };
+    aviso.classList.add('escondida');
+    contentDiv.onscroll = () => {
+        aviso.classList.add('escondida');
+        mostraDaquiA(1400);
+    };
+    aviso.onclick = () => contentDiv.scrollBy({ top: contentDiv.clientHeight * 0.6, behavior: 'smooth' });
+    mostraDaquiA(900);
 }
 
 function closeTutorial() {
     showScreen(lastScreenId);
-}
-
-// ############################################################
-// ##                    LÓGICA ONLINE                       ##
-// ############################################################
-
-// ============================================
-// ONLINE — SALA DE ESPERA (listenToRoom)
-// ============================================
-
-function listenToRoom(code) {
-    document.getElementById('room-code-display').innerText = code;
-
-    // Lista de jogadores em tempo real
-    db.ref('rooms/' + code + '/players').on('value', snapshot => {
-        const players = snapshot.val();
-        const list = document.getElementById('waiting-players-list');
-        list.innerHTML = '';
-        if (players) {
-            Object.values(players).forEach(p => {
-                list.innerHTML += `<li><span><img src="${p.avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;vertical-align:middle;border:2px solid var(--gold-dark);"> ${p.name} ${p.isHost ? '★' : ''}</span></li>`;
-            });
-            const isHost = players[onlineProfile.name] && players[onlineProfile.name].isHost;
-            const count  = Object.keys(players).length;
-            const btn    = document.getElementById('btn-start-online-game');
-            if (isHost) {
-                btn.classList.remove('hidden');
-                btn.disabled = count < 5;
-                btn.innerText = count < 5 ? t('waiting_players', { count }) : t('start_match');
-            } else {
-                btn.classList.add('hidden');
-            }
-        }
-    });
-
-    // Mudança de status
-    db.ref('rooms/' + code + '/status').on('value', snap => {
-        const status = snap.val();
-        if (status === 'revealing') {
-            fadeToBlack(() => showOnlineRoleReveal(code));
-        } else if (status === 'gameover_outlaw') {
-            db.ref('rooms/' + code).once('value').then(s => {
-                showOnlineGameOver(code, s.val(), 'OUTLAW', t('win_outlaw_rejects'));
-            });
-        } else if (status === 'gameover_law') {
-            db.ref('rooms/' + code).once('value').then(s => {
-                showOnlineGameOver(code, s.val(), 'LAW', t('win_law_missions'));
-            });
-        } else if (status === 'gameover_outlaw_missions') {
-            db.ref('rooms/' + code).once('value').then(s => {
-                showOnlineGameOver(code, s.val(), 'OUTLAW', t('win_outlaw_missions'));
-            });
-        } else if (status === 'boss_assassination') {
-            showOnlineBossAssassination(code);
-        } else if (status === 'gameover_boss_win') {
-            db.ref('rooms/' + code).once('value').then(s => {
-                showOnlineGameOver(code, s.val(), 'OUTLAW', t('win_boss_shot'));
-            });
-        } else if (status === 'gameover_boss_fail') {
-            db.ref('rooms/' + code).once('value').then(s => {
-                showOnlineGameOver(code, s.val(), 'LAW', t('win_boss_missed'));
-            });
-        } else if (status === 'duel_choose') {
-            showOnlineDuelChoose(code);
-        }
-    });
-
-    // Extras: sincronizar checkboxes em tempo real
-    db.ref('rooms/' + code + '/extras').on('value', snap => {
-        const extras = snap.val() || { roles: false, revolver: false, farsante: false };
-        const chkRoles    = document.getElementById('online-chk-roles');
-        const chkRevolver = document.getElementById('online-chk-revolver');
-        const chkFarsante = document.getElementById('online-chk-farsante');
-        chkRoles.classList.toggle('checked-visual', !!extras.roles);
-        chkRevolver.classList.toggle('checked-visual', !!extras.revolver);
-        // Farsante exige Distintivo: se roles desligar, farsante desliga junto.
-        const farsanteOn = !!extras.farsante && !!extras.roles;
-        if (chkFarsante) chkFarsante.classList.toggle('checked-visual', farsanteOn);
-        const farsCard = document.getElementById('online-card-farsante');
-        if (farsCard) farsCard.classList.toggle('disabled-card', !extras.roles);
-    });
-
-    // MODO PARTY: card visível só para o host; sincroniza o visual do checkbox
-    db.ref('rooms/' + code + '/players').on('value', snap => {
-        const players = snap.val() || {};
-        const me = players[onlineProfile.name];
-        const partyWrap = document.getElementById('online-card-party-wrap');
-        if (partyWrap) partyWrap.classList.toggle('hidden', !(me && me.isHost));
-    });
-    db.ref('rooms/' + code + '/screenMode').on('value', snap => {
-        const on = !!snap.val();
-        const chkParty = document.getElementById('online-chk-party');
-        if (chkParty) chkParty.classList.toggle('checked-visual', on);
-    });
-    // Host liga o Modo Party (transição para a tela; para voltar, encerra a sala)
-    document.getElementById('online-card-party').onclick = () => {
-        db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
-            if (!(snap.val() && snap.val().isHost)) return;
-            db.ref('rooms/' + code + '/screenMode').once('value').then(s => {
-                if (!s.val()) enabledPartyAsHost(code);
-            });
-        });
-    };
-
-    // Extras: somente host pode alterar
-    document.getElementById('online-card-roles').onclick = () => {
-        db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
-            if (snap.val() && snap.val().isHost) {
-                db.ref('rooms/' + code + '/extras').once('value').then(s => {
-                    const ex = s.val() || {};
-                    const newRoles = !ex.roles;
-                    const updates = { roles: newRoles };
-                    // desligar Distintivo desliga a Farsante junto
-                    if (!newRoles) updates.farsante = false;
-                    db.ref('rooms/' + code + '/extras').update(updates);
-                });
-            }
-        });
-    };
-
-    document.getElementById('online-card-revolver').onclick = () => {
-        db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
-            if (snap.val() && snap.val().isHost) {
-                db.ref('rooms/' + code + '/extras/revolver').once('value').then(s => {
-                    db.ref('rooms/' + code + '/extras/revolver').set(!s.val());
-                });
-            }
-        });
-    };
-
-    document.getElementById('online-card-farsante').onclick = () => {
-        db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
-            if (snap.val() && snap.val().isHost) {
-                db.ref('rooms/' + code + '/extras').once('value').then(s => {
-                    const ex = s.val() || {};
-                    if (!ex.roles) {
-                        // sem Distintivo, não deixa ligar; pisca a card do Distintivo
-                        const distCard = document.getElementById('online-card-roles');
-                        if (distCard) {
-                            distCard.classList.add('shake-req');
-                            setTimeout(() => distCard.classList.remove('shake-req'), 500);
-                        }
-                        return;
-                    }
-                    db.ref('rooms/' + code + '/extras/farsante').set(!ex.farsante);
-                });
-            }
-        });
-    };
-
-    // Iniciar partida (somente host)
-    document.getElementById('btn-start-online-game').onclick = () => {
-        const roomRef = db.ref('rooms/' + code);
-        roomRef.once('value').then(snap => {
-            const room    = snap.val();
-            const players = Object.values(room.players);
-            const count   = players.length;
-            const config  = GAME_CONFIG[count];
-            const extras  = room.extras || { roles: false, revolver: false };
-
-            let roles = [];
-            for (let i = 0; i < config.outlaws; i++) roles.push('OUTLAW');
-            for (let i = 0; i < count - config.outlaws; i++) roles.push('LAW');
-            roles = shuffle(roles);
-
-            const updates = {};
-            players.forEach((p, i) => {
-                updates[`players/${p.name}/role`]          = roles[i];
-                updates[`players/${p.name}/isBoss`]        = false;
-                updates[`players/${p.name}/isDelegado`]    = false;
-                updates[`players/${p.name}/isEscrivao`]    = false;
-                updates[`players/${p.name}/isFalsificador`]= false;
-            });
-
-            const farsanteOn = !!extras.farsante && !!extras.roles;
-
-            if (extras.roles) {
-                const outlawIdxs  = players.map((p, i) => roles[i] === 'OUTLAW' ? i : -1).filter(i => i !== -1);
-                const lawIdxs     = players.map((p, i) => roles[i] === 'LAW'    ? i : -1).filter(i => i !== -1);
-                const bossIdx     = outlawIdxs[Math.floor(Math.random() * outlawIdxs.length)];
-                const delegadoIdx = lawIdxs[Math.floor(Math.random() * lawIdxs.length)];
-                const commonOuts  = outlawIdxs.filter(i => i !== bossIdx);
-                let delegadoTargetIdx = commonOuts[Math.floor(Math.random() * commonOuts.length)];
-                updates[`players/${players[bossIdx].name}/isBoss`]         = true;
-                updates[`players/${players[delegadoIdx].name}/isDelegado`] = true;
-                updates['delegadoName']       = players[delegadoIdx].name;
-
-                if (farsanteOn) {
-                    // Falsificador: um fora-da-lei comum (nunca o Chefe).
-                    const falsIdx = commonOuts[Math.floor(Math.random() * commonOuts.length)];
-                    updates[`players/${players[falsIdx].name}/isFalsificador`] = true;
-                    updates['falsificadorName'] = players[falsIdx].name;
-                    // Escrivão: um membro da Lei comum (nunca o Delegado).
-                    const escrCands = lawIdxs.filter(i => i !== delegadoIdx);
-                    const escrIdx = escrCands[Math.floor(Math.random() * escrCands.length)];
-                    updates[`players/${players[escrIdx].name}/isEscrivao`] = true;
-                    updates['escrivaoName'] = players[escrIdx].name;
-                    // O Delegado NÃO vê o Falsificador: alvo visível é um comum != Falsificador.
-                    const visiveis = commonOuts.filter(i => i !== falsIdx);
-                    delegadoTargetIdx = visiveis.length > 0
-                        ? visiveis[Math.floor(Math.random() * visiveis.length)]
-                        : bossIdx;
-                    // Os dois nomes que o Escrivão vê (Delegado real + Falsificador), embaralhados.
-                    updates['escrivaoNames'] = shuffle([players[delegadoIdx].name, players[falsIdx].name]);
-                }
-                updates['delegadoTargetName'] = players[delegadoTargetIdx].name;
-            }
-
-            if (extras.revolver) {
-                updates['revolverOwnerName']         = players[Math.floor(Math.random() * count)].name;
-                updates['revolverPreviousOwnerName'] = null;
-            }
-
-            const sheriffIdx = Math.floor(Math.random() * count);
-            updates['currentSheriffName']  = players[sheriffIdx].name;
-            updates['currentSheriffIndex'] = sheriffIdx;
-            updates['currentMissionIndex'] = 0;
-            updates['rejectedTeams']       = 0;
-            updates['missionResults']      = {};
-            updates['extras']              = extras;
-            updates['status']              = 'revealing';
-
-            roomRef.update(updates);
-        });
-    };
-
-    // Sair da Sala
-    document.getElementById('btn-leave-room').onclick = () => {
-        cleanupRoom(code);
-        currentRoom = null;
-        showScreen('screen-online-lobby');
-    };
-}
-
-// ============================================
-// ONLINE — REVELAÇÃO DE IDENTIDADE (A CARTA)
-// ============================================
-
-function showOnlineRoleReveal(code) {
-    // Cancela o listener da sala de espera para evitar duplicatas
-    db.ref('rooms/' + code + '/status').off();
-
-    db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
-        const p = snap.val();
-        db.ref('rooms/' + code + '/players').once('value').then(allSnap => {
-            const allPlayersObj = allSnap.val();
-            const count = Object.keys(allPlayersObj).length;
-
-            showScreen('screen-online-role-reveal');
-
-            // Monta os dados da carta deste jogador
-            let suitKey = p.role;
-            if (p.isDelegado) suitKey = 'DELEGADO';
-            else if (p.isBoss) suitKey = 'BOSS';
-            else if (p.isEscrivao) suitKey = 'ESCRIVAO';
-            else if (p.isFalsificador) suitKey = 'FALSIFICADOR';
-
-            const roleData = {
-                team: p.role,
-                suitKey: suitKey,
-                hasRevolver: false
-            };
-            if (p.role === 'LAW') {
-                roleData.desc1 = t('law_desc1');
-                roleData.desc2 = t('law_desc2');
-                if (p.isDelegado) {
-                    roleData.name = t('role_delegado');
-                } else if (p.isEscrivao) {
-                    roleData.name = t('role_escrivao');
-                    roleData.desc1 = t('escrivao_desc1');
-                    roleData.desc2 = '';
-                } else {
-                    roleData.name = t('role_law');
-                }
-            } else {
-                roleData.desc1 = t('outlaw_desc1');
-                if (p.isBoss) {
-                    roleData.name = t('role_boss');
-                    roleData.desc2 = t('boss_desc2');
-                } else if (p.isFalsificador) {
-                    roleData.name = t('role_falsificador');
-                    roleData.desc2 = t('falsificador_desc2');
-                    roleData.falsificadorNotice = true;
-                } else {
-                    roleData.name = t('role_outlaw');
-                    roleData.desc2 = t('outlaw_desc2');
-                }
-                // Falsificador e Chefe veem os outros fora-da-lei.
-                roleData.outlaws = [];
-                Object.values(allPlayersObj).forEach(op => {
-                    if (op.role === 'OUTLAW' && op.name !== onlineProfile.name) {
-                        roleData.outlaws.push(op.name + (op.isBoss ? ' ' + t('boss_tagged') : ''));
-                    }
-                });
-            }
-
-            // Dados assíncronos: alvo do delegado, nomes do escrivão e dono do revólver.
-            const extraFetches = [];
-            if (p.isDelegado) {
-                extraFetches.push(
-                    db.ref('rooms/' + code + '/delegadoTargetName').once('value').then(s => {
-                        if (s.val()) roleData.delegateHtml = t('delegate_notice', { name: s.val() });
-                    })
-                );
-            }
-            if (p.isEscrivao) {
-                extraFetches.push(
-                    db.ref('rooms/' + code + '/escrivaoNames').once('value').then(s => {
-                        const arr = s.val();
-                        if (arr && arr.length === 2) roleData.escrivaoNames = arr;
-                    })
-                );
-            }
-            extraFetches.push(
-                db.ref('rooms/' + code + '/revolverOwnerName').once('value').then(s => {
-                    roleData.hasRevolver = !!s.val() && s.val() === onlineProfile.name;
-                })
-            );
-
-            Promise.all(extraFetches).then(() => {
-                myRoleData = roleData; // guarda para "Rever minha carta"
-                runCardScene({
-                    card:    'online-reveal-card',
-                    inner:   'online-reveal-card-inner',
-                    face:    'online-role-card-display',
-                    btnFlip: 'online-btn-flip-card',
-                    btnDone: 'btn-online-understood'
-                }, roleData, {
-                    doneLabelKey: 'hide_card',
-                    keepCardOnDone: false,
-                    onDone: (doneBtn) => {
-                        // A carta já virou de volta (escondida) pelo runCardScene.
-                        // Marca pronto e troca o botão para "aguardando".
-                        db.ref('rooms/' + code + '/ready/' + onlineProfile.name).set(true);
-                        doneBtn.innerText = t('waiting_all');
-                        doneBtn.style.opacity = '0.55';
-                        doneBtn.disabled = true;
-                        // botão de rever: reaparece e re-vira a carta ao tocar
-                        const flipBtn = document.getElementById('online-btn-flip-card');
-                        const innerEl = document.getElementById('online-reveal-card-inner');
-                        if (flipBtn && innerEl) {
-                            flipBtn.classList.remove('hidden');
-                            flipBtn.innerText = t('review_card_short');
-                            flipBtn.onclick = () => {
-                                AudioManager.playSFX('card');
-                                innerEl.classList.toggle('flipped');
-                            };
-                        }
-                    }
-                });
-            });
-
-            // Contador de prontos
-            db.ref('rooms/' + code + '/ready').on('value', readySnap => {
-                const ready = readySnap.val() ? Object.keys(readySnap.val()).length : 0;
-                const rc = document.getElementById('online-ready-count');
-                if (rc) rc.innerText = `✓ ${ready}/${count}`;
-                if (ready >= count) {
-                    db.ref('rooms/' + code + '/ready').off();
-                    // MODO PARTY: o telão é quem avança para o board (não o celular).
-                    // No online normal, cada celular avança sozinho.
-                    db.ref('rooms/' + code + '/screenMode').once('value').then(sm => {
-                        if (sm.val()) {
-                            // Party: apenas escuta o status; o telão dispara o board.
-                            listenToGameStatus(code);
-                        } else {
-                            db.ref('rooms/' + code + '/ready').remove();
-                            fadeToBlack(() => {
-                                listenToGameStatus(code);
-                                showOnlineBoard(code);
-                            });
-                        }
-                    });
-                }
-            });
-        });
-    });
-}
-
-// ============================================
-// ONLINE — LISTENER DE STATUS DO JOGO
-// ============================================
-
-function listenToGameStatus(code) {
-    db.ref('rooms/' + code + '/status').off();
-    db.ref('rooms/' + code + '/status').on('value', snap => {
-        const status = snap.val();
-        if (!status) return;
-
-        // NOVA PARTIDA: a sala foi resetada para o lobby de espera.
-        if (status === 'waiting') {
-            db.ref('rooms/' + code + '/status').off();
-            myRoleData = null;
-            showScreen('screen-online-waiting');
-            listenToRoom(code);
-            return;
-        }
-
-        if (status === 'voting') {
-            setTimeout(() => {
-                db.ref('rooms/' + code + '/proposedTeam').once('value').then(teamSnap => {
-                    db.ref('rooms/' + code + '/currentSheriffName').once('value').then(sheriffSnap => {
-                        db.ref('rooms/' + code + '/players').once('value').then(pSnap => {
-                            const pCount = Object.keys(pSnap.val()).length;
-                            if (teamSnap.val()) {
-                                showOnlineVoting(code, teamSnap.val(), sheriffSnap.val(), pCount);
-                            }
-                        });
-                    });
-                });
-            }, 300);
-        } else if (status === 'board') {
-            showOnlineBoard(code);
-        } else if (status === 'mission') {
-            db.ref('rooms/' + code + '/proposedTeam').once('value').then(teamSnap => {
-                showOnlineMission(code, teamSnap.val());
-            });
-        } else if (status === 'missionResult') {
-            db.ref('rooms/' + code + '/missionResult').once('value').then(resultSnap => {
-                showOnlineMissionResult(code, resultSnap.val());
-            });
-        } else if (status === 'gameover_outlaw') {
-            db.ref('rooms/' + code).once('value').then(s => {
-                showOnlineGameOver(code, s.val(), 'OUTLAW', t('win_outlaw_rejects'));
-            });
-        } else if (status === 'gameover_law') {
-            db.ref('rooms/' + code).once('value').then(s => {
-                showOnlineGameOver(code, s.val(), 'LAW', t('win_law_missions'));
-            });
-        } else if (status === 'gameover_outlaw_missions') {
-            db.ref('rooms/' + code).once('value').then(s => {
-                showOnlineGameOver(code, s.val(), 'OUTLAW', t('win_outlaw_missions'));
-            });
-        } else if (status === 'boss_assassination') {
-            showOnlineBossAssassination(code);
-        } else if (status === 'gameover_boss_win') {
-            db.ref('rooms/' + code).once('value').then(s => {
-                showOnlineGameOver(code, s.val(), 'OUTLAW', t('win_boss_shot'));
-            });
-        } else if (status === 'gameover_boss_fail') {
-            db.ref('rooms/' + code).once('value').then(s => {
-                showOnlineGameOver(code, s.val(), 'LAW', t('win_boss_missed'));
-            });
-        } else if (status === 'duel_choose') {
-            showOnlineDuelChoose(code);
-        } else if (status === 'duel_result') {
-            db.ref('rooms/' + code + '/duelResult').once('value').then(dSnap => {
-                showOnlineDuelResult(code, dSnap.val());
-            });
-        }
-    });
-}
-
-// ============================================
-// ONLINE — TABULEIRO
-// ============================================
-
-function showOnlineBoard(code) {
-    db.ref('rooms/' + code).once('value').then(snap => {
-        const room         = snap.val();
-        const players      = Object.values(room.players);
-        const sheriffName  = room.currentSheriffName;
-        const missionIndex = room.currentMissionIndex || 0;
-        const config       = GAME_CONFIG[players.length];
-        const missionSize  = config.missions[missionIndex];
-        const isSheriff    = sheriffName === onlineProfile.name;
-
-        showScreen('screen-online-board');
-
-        // Trilha de missões — fichas que viram (verso numerado → frente do resultado)
-        const mContainer = document.getElementById('online-mission-track-container');
-        const missionResults = room.missionResults || {};
-        buildMissionTrack(
-            mContainer,
-            config.missions,
-            missionResults,
-            missionIndex,
-            config.twoFailsRequired === undefined ? -1 : config.twoFailsRequired,
-            -1
-        );
-
-        document.getElementById('online-reject-count').innerText = room.rejectedTeams || 0;
-        const rDots = document.getElementById('online-reject-dots-container');
-        rDots.innerHTML = '';
-        for (let i = 0; i < 5; i++) {
-            const dot = document.createElement('div');
-            dot.className = 'reject-dot';
-            dot.innerHTML = rejectChipSVG(i < (room.rejectedTeams || 0));
-            rDots.appendChild(dot);
-        }
-
-        document.getElementById('online-mission-num').innerText  = missionIndex + 1;
-        document.getElementById('online-mission-lore').innerText = missionLore(missionIndex);
-
-        if (isSheriff) {
-            document.getElementById('online-sheriff-area').classList.remove('hidden');
-            document.getElementById('online-waiting-area').classList.add('hidden');
-            document.getElementById('online-sheriff-instruction').innerText =
-                t('sheriff_pick_online', { size: missionSize });
-
-            // MODO TELA: cronômetro pequeno no topo (sincronizado com o telão)
-            if (room.screenMode) {
-                showPhonePickTimer(code);
-            }
-
-            const teamList = document.getElementById('online-team-select-list');
-            teamList.innerHTML = '';
-            let selectedTeam = [];
-
-            players.forEach(p => {
-                const div = document.createElement('div');
-                div.className = 'selectable-item has-avatar';
-                const av = p.avatar || 'avatars/avatar1.png';
-                div.innerHTML = `<div class="avatar-wrap"><img src="${av}" alt=""><div class="check-badge">✓</div></div><span class="player-name">${p.name}</span>`;
-                div.onclick = () => {
-                    const pos = selectedTeam.indexOf(p.name);
-                    if (pos >= 0) {
-                        selectedTeam.splice(pos, 1);
-                        div.classList.remove('selected');
-                    } else if (selectedTeam.length < missionSize) {
-                        selectedTeam.push(p.name);
-                        div.classList.add('selected');
-                    }
-                    document.getElementById('online-btn-propose').disabled = selectedTeam.length !== missionSize;
-                };
-                teamList.appendChild(div);
-            });
-
-            document.getElementById('online-btn-propose').disabled = true;
-            document.getElementById('online-btn-propose').onclick = () => {
-                db.ref('rooms/' + code + '/proposedTeam').set(selectedTeam);
-                db.ref('rooms/' + code + '/pickEndTime').set(null);
-                db.ref('rooms/' + code + '/status').set('voting');
-            };
-        } else {
-            // MODO TELA: jogador fora da vez vê o resumo dos papéis (não a espera padrão)
-            if (room.screenMode) {
-                showPhoneSummary(code);
-                return;
-            }
-            document.getElementById('online-sheriff-area').classList.add('hidden');
-            document.getElementById('online-waiting-area').classList.remove('hidden');
-            document.getElementById('online-waiting-text').innerText =
-                t('building_team', { name: sheriffName, num: missionIndex + 1 });
-        }
-    });
-}
-
-// ============================================
-// ONLINE — VOTAÇÃO
-// ============================================
-
-function showOnlineVoting(code, team, sheriffName, playerCount) {
-    showScreen('screen-online-voting');
-
-    // MODO TELA: detecta se a sala usa telão (o celular não resolve a votação)
-    const screenMode = !isScreenDevice; // num celular, screenMode da sala é tratado abaixo
-
-    const teamList = document.getElementById('online-voting-team');
-    teamList.innerHTML = '';
-    team.forEach(name => { teamList.innerHTML += `<li><span>${name}</span></li>`; });
-
-    if (onlineProfile.name === sheriffName) {
-        db.ref('rooms/' + code + '/votes/' + onlineProfile.name).set('yes');
-        document.getElementById('online-vote-area').classList.add('hidden');
-        document.getElementById('online-voted-msg').classList.remove('hidden');
-    } else {
-        document.getElementById('online-vote-area').classList.remove('hidden');
-        document.getElementById('online-voted-msg').classList.add('hidden');
-
-        const yesBtn = document.getElementById('online-btn-vote-yes');
-        const noBtn  = document.getElementById('online-btn-vote-no');
-        const newYes = yesBtn.cloneNode(true);
-        const newNo  = noBtn.cloneNode(true);
-        yesBtn.parentNode.replaceChild(newYes, yesBtn);
-        noBtn.parentNode.replaceChild(newNo, noBtn);
-
-        const registerVote = (vote) => {
-            db.ref('rooms/' + code + '/votes/' + onlineProfile.name).set(vote);
-            document.getElementById('online-vote-area').classList.add('hidden');
-            document.getElementById('online-voted-msg').classList.remove('hidden');
-        };
-        newYes.onclick = () => registerVote('yes');
-        newNo.onclick  = () => registerVote('no');
-    }
-
-    // No modo tela, o cronômetro pequeno aparece no celular (sincronizado com o telão)
-    db.ref('rooms/' + code).once('value').then(rSnap => {
-        const room = rSnap.val() || {};
-        if (room.screenMode) {
-            showPhoneMiniTimer(code);
-            // oculta o contador de votos no celular (a contagem aparece no telão)
-            const vc = document.getElementById('online-votes-count');
-            if (vc) vc.style.display = 'none';
-            // O celular NÃO resolve a votação nem mostra o resultado:
-            // ele apenas escuta o status mudar (o telão resolve e muda o status).
-            return;
-        }
-        // modo online normal: garante o contador visível
-        const vc = document.getElementById('online-votes-count');
-        if (vc) vc.style.display = '';
-        // Modo online normal: cada celular conta e resolve (comportamento original)
-        db.ref('rooms/' + code + '/votes').off();
-        db.ref('rooms/' + code + '/votes').on('value', votesSnap => {
-            const votes = votesSnap.val() || {};
-            const count = Object.keys(votes).length;
-            document.getElementById('online-votes-count').innerText =
-                t('votes_count', { count, total: playerCount });
-            if (count >= playerCount) {
-                db.ref('rooms/' + code + '/votes').off();
-                const yesVotes = Object.values(votes).filter(v => v === 'yes').length;
-                const majority = Math.floor(playerCount / 2) + 1;
-                const approved = yesVotes >= majority;
-                setTimeout(() => showOnlineVoteResult(code, votes, approved, team, playerCount), 800);
-            }
-        });
-    });
-}
-
-// ============================================
-// ONLINE — RESULTADO DA VOTAÇÃO
-// ============================================
-
-function showOnlineVoteResult(code, votes, approved, team, playerCount) {
-    showScreen('screen-online-vote-result');
-
-    const yesVotes = Object.entries(votes).filter(([k, v]) => v === 'yes').map(([k]) => k);
-    const noVotes  = Object.entries(votes).filter(([k, v]) => v === 'no').map(([k]) => k);
-
-    const outcome = document.getElementById('online-vote-outcome');
-    outcome.innerText = approved ? '✅ ' + t('approved_team') : '❌ ' + t('rejected_team');
-    outcome.className = 'display text-center ' + (approved ? 'neon-text blue' : 'neon-text red');
-
-    const yesList = document.getElementById('online-yes-list');
-    const noList  = document.getElementById('online-no-list');
-    yesList.innerHTML = '';
-    noList.innerHTML  = '';
-    yesVotes.forEach(name => yesList.innerHTML += `<li>${name}</li>`);
-    noVotes.forEach(name  => noList.innerHTML  += `<li>${name}</li>`);
-
-    // Só o xerife avança
-    db.ref('rooms/' + code + '/currentSheriffName').once('value').then(sheriffSnap => {
-        const nextBtn = document.getElementById('online-btn-vote-next');
-        const waitMsg = document.getElementById('online-vote-waiting');
-
-        if (sheriffSnap.val() === onlineProfile.name) {
-            nextBtn.classList.remove('hidden');
-            waitMsg.classList.add('hidden');
-
-            const newBtn = nextBtn.cloneNode(true);
-            nextBtn.parentNode.replaceChild(newBtn, nextBtn);
-
-            newBtn.onclick = () => {
-                if (approved) {
-                    db.ref('rooms/' + code + '/votes').remove();
-                    db.ref('rooms/' + code + '/status').set('mission');
-                } else {
-                    db.ref('rooms/' + code).once('value').then(snap => {
-                        const room        = snap.val();
-                        const playerNames = Object.keys(room.players);
-                        const currentIdx  = room.currentSheriffIndex || 0;
-                        const nextIdx     = (currentIdx + 1) % playerNames.length;
-                        const newRejected = (room.rejectedTeams || 0) + 1;
-
-                        const updates = {
-                            currentSheriffName:  playerNames[nextIdx],
-                            currentSheriffIndex: nextIdx,
-                            rejectedTeams:       newRejected,
-                            votes:               null,
-                            proposedTeam:        null,
-                            status: newRejected >= 5 ? 'gameover_outlaw' : 'board'
-                        };
-                        db.ref('rooms/' + code).update(updates);
-                    });
-                }
-            };
-        } else {
-            nextBtn.classList.add('hidden');
-            waitMsg.classList.remove('hidden');
-        }
-    });
-}
-
-// ============================================
-// ONLINE — EXECUÇÃO DE MISSÃO
-// ============================================
-
-function showOnlineMission(code, team) {
-    const isInTeam = team && team.includes(onlineProfile.name);
-
-    // MODO TELA: quem não está na missão acompanha pelo resumo/telão
-    if (!isInTeam) {
-        let handledByScreen = false;
-        // checagem síncrona via snapshot
-        db.ref('rooms/' + code).once('value').then(rSnap => {
-            const room = rSnap.val() || {};
-            if (room.screenMode) {
-                showPhoneSummary(code);
-            } else {
-                showScreen('screen-online-mission');
-                document.getElementById('online-mission-action-area').classList.add('hidden');
-                document.getElementById('online-mission-waiting-area').classList.remove('hidden');
-                document.getElementById('online-mission-waiting-text').innerText = t('waiting_mission_result');
-            }
-        });
-        return;
-    }
-
-    showScreen('screen-online-mission');
-    document.getElementById('online-mission-action-area').classList.remove('hidden');
-    document.getElementById('online-mission-waiting-area').classList.add('hidden');
-    document.getElementById('online-mission-player').innerText = onlineProfile.name;
-    document.getElementById('online-mission-after').style.opacity = '0';
-
-    db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
-        const isLaw = snap.val() && snap.val().role === 'LAW';
-        renderChipTable({
-            rowId: 'online-mission-chip-row',
-            warnId: 'online-law-warning',
-            confirmId: 'online-mission-confirm',
-            nextBtnId: 'online-btn-mission-next-hidden',
-            isLaw: isLaw,
-            onChoice: (isSuccess) => {
-                db.ref('rooms/' + code + '/missionChoices/' + onlineProfile.name)
-                  .set(isSuccess ? 'success' : 'sabotage');
-                setTimeout(() => {
-                    document.getElementById('online-mission-after').style.opacity = '1';
-                    document.getElementById('online-mission-after').innerText = t('choice_registered');
-                }, REDUCED_MOTION ? 0 : 1100);
-            },
-            onNext: () => {}
-        });
-    });
-
-    // Quando todos da equipe escolheram, processa o resultado.
-    // MODO TELA: quem processa é o telão (não o celular do xerife).
-    db.ref('rooms/' + code).once('value').then(rSnap => {
-        const room = rSnap.val() || {};
-        if (room.screenMode) return; // no modo tela, o telão é o juiz
-
-        db.ref('rooms/' + code + '/missionChoices').off();
-        db.ref('rooms/' + code + '/missionChoices').on('value', choicesSnap => {
-            const choices = choicesSnap.val() || {};
-            if (team && Object.keys(choices).length >= team.length) {
-                db.ref('rooms/' + code + '/missionChoices').off();
-                db.ref('rooms/' + code + '/currentSheriffName').once('value').then(sheriffSnap => {
-                    if (sheriffSnap.val() === onlineProfile.name) {
-                        const sabotages = Object.values(choices).filter(c => c === 'sabotage').length;
-                        db.ref('rooms/' + code + '/currentMissionIndex').once('value').then(mSnap => {
-                            const mIdx = mSnap.val() || 0;
-                            db.ref('rooms/' + code + '/missionResult').set({ sabotages, missionIndex: mIdx, total: team.length });
-                            db.ref('rooms/' + code + '/status').set('missionResult');
-                        });
-                    }
-                });
-            }
-        });
-    });
-}
-
-// ============================================
-// ONLINE — RESULTADO DA MISSÃO
-// ============================================
-
-function showOnlineMissionResult(code, result) {
-    // MODO TELA: o resultado aparece no telão. O celular volta ao resumo.
-    db.ref('rooms/' + code).once('value').then(rSnap => {
-        const room = rSnap.val() || {};
-        if (room.screenMode) {
-            showPhoneSummary(code);
-            return;
-        }
-        showMissionResultNormal(code, result);
-    });
-}
-
-function showMissionResultNormal(code, result) {
-    showScreen('screen-online-mission-result');
-    const sabotages  = result.sabotages;
-    const missionIdx = result.missionIndex || 0;
-
-    db.ref('rooms/' + code + '/players').once('value').then(pSnap => {
-        const pCount = Object.keys(pSnap.val()).length;
-        const config = GAME_CONFIG[pCount];
-        const failsRequired  = config.twoFailsRequired === missionIdx ? 2 : 1;
-        const missionSuccess = sabotages < failsRequired;
-        const total = result.total || config.missions[missionIdx];
-        setTimeout(() => setLight(missionSuccess ? 'blue' : 'red'), 900);
-
-        const waitEl = document.getElementById('online-mission-result-waiting');
-        waitEl.classList.add('hidden'); // só reaparece após a animação, p/ não-xerife
-
-        // Animação de fichas para TODOS; o botão next só para o xerife
-        playMissionResult({
-            rowId: 'online-result-chip-row',
-            boardId: 'online-sabotage-board',
-            numId: 'online-mission-sabotage-count',
-            outcomeId: 'online-mission-outcome',
-            loreId: 'online-mission-outcome-lore',
-            nextBtnId: 'online-btn-mission-next',
-            sabotages: sabotages,
-            total: total,
-            missionSuccess: missionSuccess,
-            onNext: () => {
-                document.body.classList.remove('bg-winner-law', 'bg-winner-outlaw');
-                db.ref('rooms/' + code).once('value').then(snap => {
-                    const room = snap.val();
-                    const mResults = room.missionResults || {};
-                    mResults[missionIdx] = missionSuccess;
-                    const winsLaw    = Object.values(mResults).filter(r => r === true).length;
-                    const winsOutlaw = Object.values(mResults).filter(r => r === false).length;
-                    const playerNames = Object.keys(room.players);
-                    const currentIdx  = room.currentSheriffIndex || 0;
-                    const nextIdx     = (currentIdx + 1) % playerNames.length;
-
-                    const updates = {
-                        missionChoices: null,
-                        proposedTeam:   null,
-                        missionResult:  null,
-                        [`missionResults/${missionIdx}`]: missionSuccess,
-                        currentSheriffName:  playerNames[nextIdx],
-                        currentSheriffIndex: nextIdx,
-                    };
-                    if (winsLaw >= 3) {
-                        updates['status'] = (room.extras && room.extras.roles) ? 'boss_assassination' : 'gameover_law';
-                    } else if (winsOutlaw >= 3) {
-                        updates['status'] = 'gameover_outlaw_missions';
-                    } else {
-                        // jogo continua: volta ao estado neutro
-                        setLight('orange');
-                        updates['currentMissionIndex'] = missionIdx + 1;
-                        if ((missionIdx === 1 || missionIdx === 2) && room.extras && room.extras.revolver && room.revolverOwnerName) {
-                            updates['status'] = 'duel_choose';
-                            updates['currentMissionIndex'] = missionIdx;
-                        } else {
-                            updates['status'] = 'board';
-                        }
-                    }
-                    db.ref('rooms/' + code).update(updates);
-                });
-            }
-        });
-
-        // Quem não é xerife: esconde o botão e mostra "aguardando" após a animação
-        db.ref('rooms/' + code + '/currentSheriffName').once('value').then(sheriffSnap => {
-            const isSheriff = sheriffSnap.val() === onlineProfile.name;
-            const nextBtn = document.getElementById('online-btn-mission-next');
-            if (!isSheriff) {
-                if (nextBtn) nextBtn.classList.add('hidden');
-                // tempo aproximado da animação antes de mostrar o aviso
-                const delay = REDUCED_MOTION ? 0 : 2500 + (sabotages > 0 ? 1800 : 0);
-                setTimeout(() => waitEl.classList.remove('hidden'), delay);
-            } else if (nextBtn) {
-                nextBtn.classList.remove('hidden');
-            }
-        });
-    });
-}
-
-// ============================================
-// ONLINE — DUELO (REVÓLVER)
-// ============================================
-
-function showOnlineDuelChoose(code) {
-    db.ref('rooms/' + code).once('value').then(snap => {
-        const room = snap.val();
-        const revolverOwner = room.revolverOwnerName;
-        const revolverPrev  = room.revolverPreviousOwnerName || null;
-        const isRevolverOwner = revolverOwner === onlineProfile.name;
-
-        showScreen('screen-online-duel-choose');
-
-        document.getElementById('online-duel-owner-name').innerText =
-            t('duel_owner_has_online', { name: revolverOwner });
-
-        if (isRevolverOwner) {
-            document.getElementById('online-duel-owner-area').classList.remove('hidden');
-            document.getElementById('online-duel-waiting-area').classList.add('hidden');
-
-            const players = Object.values(room.players);
-            const targetsList = document.getElementById('online-duel-targets-list');
-            targetsList.innerHTML = '';
-            let targetSelected = null;
-
-            players.forEach(p => {
-                if (p.name !== revolverOwner && p.name !== revolverPrev) {
-                    const div = document.createElement('div');
-                    div.className = 'selectable-item';
-                    div.innerText = p.name;
-                    div.onclick = () => {
-                        const prev = targetsList.querySelector('.selected');
-                        if (prev) prev.classList.remove('selected');
-                        div.classList.add('selected');
-                        targetSelected = p.name;
-                        document.getElementById('online-btn-challenge').disabled = false;
-                    };
-                    targetsList.appendChild(div);
-                }
-            });
-
-            document.getElementById('online-btn-challenge').disabled = true;
-            document.getElementById('online-btn-challenge').onclick = () => {
-                db.ref('rooms/' + code + '/duel').set({
-                    shooterName: revolverOwner,
-                    targetName: targetSelected,
-                    shooterAction: null,
-                    targetAction: null
-                });
-                db.ref('rooms/' + code + '/status').set('duel_action');
-            };
-
-            document.getElementById('online-btn-skip-duel').onclick = () => {
-                db.ref('rooms/' + code + '/currentMissionIndex').once('value').then(mSnap => {
-                    const nextMission = (mSnap.val() || 0) + 1;
-                    db.ref('rooms/' + code).update({
-                        currentMissionIndex: nextMission,
-                        status: 'board'
-                    });
-                });
-            };
-        } else {
-            // MODO TELA: quem não tem o revólver acompanha pelo telão
-            if (room.screenMode) {
-                showScreen('screen-phone-watch');
-                const wt = document.getElementById('phone-watch-title');
-                const ws = document.getElementById('phone-watch-sub');
-                if (wt) { wt.innerText = t('phone_duel_title'); wt.style.color = 'var(--accent)'; }
-                if (ws) ws.innerText = t('phone_duel_sub');
-            } else {
-                document.getElementById('online-duel-owner-area').classList.add('hidden');
-                document.getElementById('online-duel-waiting-area').classList.remove('hidden');
-            }
-        }
-
-        // Listener para quando o status mudar
-        db.ref('rooms/' + code + '/status').off();
-        db.ref('rooms/' + code + '/status').on('value', statusSnap => {
-            if (statusSnap.val() === 'duel_action') {
-                db.ref('rooms/' + code + '/status').off();
-                showOnlineDuelAction(code);
-            } else if (statusSnap.val() === 'board' && !isRevolverOwner) {
-                // Dono pulou o duelo
-                db.ref('rooms/' + code + '/status').off();
-                listenToGameStatus(code);
-                showOnlineBoard(code);
-            }
-        });
-    });
-}
-
-function showOnlineDuelAction(code) {
-    db.ref('rooms/' + code + '/duel').once('value').then(duelSnap => {
-        const duel = duelSnap.val();
-        const isShooter = duel.shooterName === onlineProfile.name;
-        const isTarget  = duel.targetName  === onlineProfile.name;
-
-        showScreen('screen-online-duel-action');
-
-        if (isShooter || isTarget) {
-            document.getElementById('online-duel-action-area').classList.remove('hidden');
-            document.getElementById('online-duel-action-waiting').classList.add('hidden');
-            document.getElementById('online-duel-action-title').innerText =
-                isShooter ? t('duel_started_you') : t('duel_challenged');
-
-            const shootBtn = document.getElementById('online-btn-duel-shoot');
-            const downBtn  = document.getElementById('online-btn-duel-down');
-            const newShoot = shootBtn.cloneNode(true);
-            const newDown  = downBtn.cloneNode(true);
-            shootBtn.parentNode.replaceChild(newShoot, shootBtn);
-            downBtn.parentNode.replaceChild(newDown, downBtn);
-
-            const submitDuelChoice = (action) => {
-                const field = isShooter ? 'shooterAction' : 'targetAction';
-                db.ref('rooms/' + code + '/duel/' + field).set(action);
-                document.getElementById('online-duel-action-area').classList.add('hidden');
-                document.getElementById('online-duel-action-waiting').classList.remove('hidden');
-                // Sem som: a escolha é secreta — o tiro só toca na revelação pública.
-            };
-
-            newShoot.onclick = () => submitDuelChoice('shoot');
-            newDown.onclick  = () => submitDuelChoice('down');
-        } else {
-            document.getElementById('online-duel-action-area').classList.add('hidden');
-            document.getElementById('online-duel-action-waiting').classList.remove('hidden');
-        }
-
-        // Quando ambos escolheram, o atirador processa o resultado
-        db.ref('rooms/' + code + '/duel').off();
-        db.ref('rooms/' + code + '/duel').on('value', duelUpdSnap => {
-            const d = duelUpdSnap.val();
-            if (d && d.shooterAction && d.targetAction) {
-                db.ref('rooms/' + code + '/duel').off();
-                if (duel.shooterName === onlineProfile.name) {
-                    const sShoot = d.shooterAction === 'shoot';
-                    const tShoot = d.targetAction  === 'shoot';
-                    const hasIntimidation = (sShoot === tShoot); // ambos iguais = intimidação
-
-                    db.ref('rooms/' + code).update({
-                        duelResult: {
-                            shooterName: d.shooterName,
-                            targetName:  d.targetName,
-                            shooterAction: d.shooterAction,
-                            targetAction:  d.targetAction,
-                            hasIntimidation
-                        },
-                        revolverOwnerName:         d.targetName,
-                        revolverPreviousOwnerName: d.shooterName,
-                        status: 'duel_result'
-                    });
-                }
-            }
-        });
-
-        // Escutar status
-        db.ref('rooms/' + code + '/status').off();
-        db.ref('rooms/' + code + '/status').on('value', stSnap => {
-            if (stSnap.val() === 'duel_result') {
-                db.ref('rooms/' + code + '/status').off();
-                db.ref('rooms/' + code + '/duelResult').once('value').then(drSnap => {
-                    showOnlineDuelResult(code, drSnap.val());
-                });
-            }
-        });
-    });
-}
-
-function showOnlineDuelResult(code, result) {
-    showScreen('screen-online-duel-result');
-
-    if (result.shooterAction === 'shoot' || result.targetAction === 'shoot') {
-        AudioManager.playSFX('shot'); // momento público
-    }
-
-    const sShoot = result.shooterAction === 'shoot';
-    const tShoot = result.targetAction  === 'shoot';
-    const resP   = document.getElementById('online-duel-result-text');
-
-    if (sShoot && tShoot)        resP.innerHTML = t('duel_both_shot');
-    else if (!sShoot && !tShoot) resP.innerHTML = t('duel_both_down');
-    else                         resP.innerHTML = t('duel_mixed');
-
-    // Se houve intimidação, o atirador vê o time do alvo
-    if (result.hasIntimidation && result.shooterName === onlineProfile.name) {
-        document.getElementById('online-duel-intimidation-area').classList.remove('hidden');
-        db.ref('rooms/' + code + '/players/' + result.targetName).once('value').then(tSnap => {
-            const targetPlayer = tSnap.val();
-            document.getElementById('online-intimidated-name').innerText = result.targetName;
-            const roleLabel = document.getElementById('online-intimidated-role');
-            if (targetPlayer.role === 'LAW') {
-                roleLabel.innerText = t('law_resistance');
-                roleLabel.className = 'neon-text blue display';
-            } else {
-                roleLabel.innerText = t('outlaw_team');
-                roleLabel.className = 'neon-text red display';
-            }
-        });
-    } else {
-        document.getElementById('online-duel-intimidation-area').classList.add('hidden');
-    }
-
-    const nextBtn = document.getElementById('online-btn-duel-result-next');
-    const newBtn  = nextBtn.cloneNode(true);
-    nextBtn.parentNode.replaceChild(newBtn, nextBtn);
-
-    newBtn.onclick = () => {
-        // Só o atirador avança o jogo
-        if (result.shooterName === onlineProfile.name) {
-            db.ref('rooms/' + code + '/currentMissionIndex').once('value').then(mSnap => {
-                const nextMission = (mSnap.val() || 0) + 1;
-                db.ref('rooms/' + code).update({
-                    currentMissionIndex: nextMission,
-                    duel: null,
-                    duelResult: null,
-                    status: 'board'
-                });
-            });
-        } else {
-            listenToGameStatus(code);
-        }
-    };
-
-    // Todos ficam ouvindo o próximo status
-    db.ref('rooms/' + code + '/status').off();
-    db.ref('rooms/' + code + '/status').on('value', stSnap => {
-        if (stSnap.val() === 'board') {
-            db.ref('rooms/' + code + '/status').off();
-            listenToGameStatus(code);
-            showOnlineBoard(code);
-        }
-    });
-}
-
-// ============================================
-// ONLINE — ASSASSINATO DO CHEFE
-// ============================================
-
-function showOnlineBossAssassination(code) {
-    db.ref('rooms/' + code + '/players').once('value').then(snap => {
-        const players = Object.values(snap.val());
-        const myData  = players.find(p => p.name === onlineProfile.name);
-        const isBoss  = myData && myData.isBoss;
-
-        showScreen('screen-online-boss-assassination');
-
-        if (isBoss) {
-            document.getElementById('online-boss-action-area').classList.remove('hidden');
-            document.getElementById('online-boss-waiting-area').classList.add('hidden');
-
-            const assassinateList = document.getElementById('online-assassination-list');
-            assassinateList.innerHTML = '';
-            let targetSelected = null;
-
-            players.forEach(p => {
-                if (!p.isBoss) {
-                    const div = document.createElement('div');
-                    div.className = 'selectable-item';
-                    div.innerText = p.name;
-                    div.onclick = () => {
-                        const prev = assassinateList.querySelector('.selected');
-                        if (prev) prev.classList.remove('selected');
-                        div.classList.add('selected');
-                        targetSelected = p.name;
-                        document.getElementById('online-btn-boss-shoot').disabled = false;
-                    };
-                    assassinateList.appendChild(div);
-                }
-            });
-
-            document.getElementById('online-btn-boss-shoot').disabled = true;
-            document.getElementById('online-btn-boss-shoot').onclick = () => {
-                AudioManager.playSFX('shot');
-                db.ref('rooms/' + code + '/delegadoName').once('value').then(dSnap => {
-                    const delegadoName = dSnap.val();
-                    const newStatus = targetSelected === delegadoName
-                        ? 'gameover_boss_win'
-                        : 'gameover_boss_fail';
-                    db.ref('rooms/' + code + '/status').set(newStatus);
-                });
-            };
-        } else {
-            // MODO TELA: quem não é o Chefe vê a tela de "olhe o telão"
-            db.ref('rooms/' + code).once('value').then(rSnap => {
-                const room = rSnap.val() || {};
-                if (room.screenMode) {
-                    showScreen('screen-phone-watch');
-                    const wt = document.getElementById('phone-watch-title');
-                    const ws = document.getElementById('phone-watch-sub');
-                    if (wt) { wt.innerText = t('phone_boss_aiming_title'); wt.style.color = 'var(--outlaw)'; }
-                    if (ws) ws.innerText = t('phone_boss_aiming_sub');
-                    return;
-                }
-                document.getElementById('online-boss-action-area').classList.add('hidden');
-                document.getElementById('online-boss-waiting-area').classList.remove('hidden');
-            });
-        }
-    });
-}
-
-// ============================================
-// ONLINE — FIM DE JOGO
-// ============================================
-
-function showOnlineGameOver(code, room, winner, reason) {
-    db.ref('rooms/' + code + '/status').off();
-
-    // MODO TELA: o resultado completo (papéis revelados) aparece no telão.
-    // O celular mostra uma tela simples apontando para o telão.
-    if (room && room.screenMode && !isScreenDevice) {
-        showScreen('screen-phone-watch');
-        const wt = document.getElementById('phone-watch-title');
-        const ws = document.getElementById('phone-watch-sub');
-        const icon = document.querySelector('#screen-phone-watch .phone-watch-big');
-        const winnerIsLaw = winner === 'LAW';
-        // troca o ícone do olho pelo naipe do time vencedor
-        if (icon) {
-            icon.innerHTML = suitSVG(winnerIsLaw ? 'LAW' : 'OUTLAW');
-            icon.style.width = '120px';
-            icon.style.height = '120px';
-        }
-        if (wt) wt.innerText = winnerIsLaw ? t('law_wins') : t('outlaw_wins');
-        if (wt) wt.style.color = winnerIsLaw ? 'var(--law)' : 'var(--outlaw)';
-        if (ws) ws.innerText = t('phone_watch_screen_result');
-        return;
-    }
-
-    showScreen('screen-online-game-over');
-
-    document.getElementById('online-game-over-reason').innerText = reason;
-
-    document.body.classList.remove('bg-winner-law', 'bg-winner-outlaw');
-    if (winner === 'LAW') {
-        AudioManager.playSFX('success');
-        document.body.classList.add('bg-winner-law');
-        setLight('blue');
-    } else {
-        AudioManager.playSFX('fail');
-        document.body.classList.add('bg-winner-outlaw');
-        setLight('red');
-    }
-
-    const players = room.players ? Object.values(room.players) : [];
-    const lawUl   = document.getElementById('online-final-law-list');
-    const outUl   = document.getElementById('online-final-outlaw-list');
-    lawUl.innerHTML = '';
-    outUl.innerHTML = '';
-
-    players.forEach(p => {
-        let suitKey = p.role;
-        let tag = '';
-        if (p.isBoss)              { suitKey = 'BOSS';         tag = t('tag_boss'); }
-        else if (p.isDelegado)     { suitKey = 'DELEGADO';     tag = t('tag_delegado'); }
-        else if (p.isEscrivao)     { suitKey = 'ESCRIVAO';     tag = t('tag_escrivao'); }
-        else if (p.isFalsificador) { suitKey = 'FALSIFICADOR'; tag = t('tag_falsificador'); }
-        const av = p.avatar || 'avatars/avatar1.png';
-        const suit = (typeof suitSVG === 'function') ? suitSVG(suitKey) : '';
-        const tagHtml = tag ? `<span class="reveal-tag">${tag.trim()}</span>` : '';
-        if (p.role === 'LAW') {
-            lawUl.innerHTML += `<li class="reveal-li law"><div class="avatar-wrap"><img src="${av}" alt=""></div><span class="reveal-name">${p.name}</span>${tagHtml}<span class="reveal-suit">${suit}</span></li>`;
-        } else {
-            outUl.innerHTML += `<li class="reveal-li outlaw"><div class="avatar-wrap"><img src="${av}" alt=""></div><span class="reveal-name">${p.name}</span>${tagHtml}<span class="reveal-suit">${suit}</span></li>`;
-        }
-    });
-
-    const playAgainBtn = document.getElementById('online-btn-play-again');
-    const newBtn = playAgainBtn.cloneNode(true);
-    playAgainBtn.parentNode.replaceChild(newBtn, playAgainBtn);
-
-    newBtn.onclick = () => {
-        document.body.classList.remove('bg-winner-law', 'bg-winner-outlaw');
-        db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
-            if (snap.val() && snap.val().isHost) {
-                cleanupRoomEntirely(code);
-            } else {
-                cleanupRoom(code);
-            }
-            currentRoom = null;
-            showScreen('screen-online-lobby');
-        });
-    };
-
-    const menuBtn = document.getElementById('online-btn-back-menu');
-    const newMenuBtn = menuBtn.cloneNode(true);
-    menuBtn.parentNode.replaceChild(newMenuBtn, menuBtn);
-
-    newMenuBtn.onclick = () => {
-        document.body.classList.remove('bg-winner-law', 'bg-winner-outlaw');
-        db.ref('rooms/' + code + '/players/' + onlineProfile.name).once('value').then(snap => {
-            if (snap.val() && snap.val().isHost) {
-                cleanupRoomEntirely(code);
-            } else {
-                cleanupRoom(code);
-            }
-            currentRoom = null;
-            showScreen('screen-mode-select');
-        });
-    };
 }

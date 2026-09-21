@@ -126,113 +126,150 @@ const SUIT_LETTER = { LAW: 'L', DELEGADO: 'D', ESCRIVAO: 'E', OUTLAW: 'F', BOSS:
 // cada chamada (a ficha cheia se repete na tela de resultado, e IDs
 // fixos colidiriam, quebrando os textos curvos e o naipe).
 // ════════════════════════════════════════════
-const CHIP_C = {
-    blue: { base: '#2563eb', dark: '#1d4ed8', side: '#14368a' },
-    red:  { base: '#dc2626', dark: '#b91c1c', side: '#8f1313' },
-    wine: { base: '#881337', dark: '#6b0f2b', side: '#4a0a1e' }
+// ════════════════════════════════════════════
+// FICHAS DE PÔQUER — arte pronta, recortada em círculo
+// ════════════════════════════════════════════
+// O relevo (a lateral da ficha) continua no CSS: uma sombra sólida
+// deslocada para baixo, com a espessura que cada tela define em
+// --chip-depth. A arte em si é PNG com o fora do círculo transparente.
+
+const CHIP_ART = {
+    lei:     'images/chip-lei.png',      // estrela de xerife, azul
+    fora:    'images/chip-fora.png',     // caveira, vermelha
+    estrela: 'images/chip-estrela.png',  // verso neutro, vinho
+    vazia:   'images/chip-num.png'       // vinho sem miolo, para levar número
 };
 
-// Templates aprovados (estrela = Lei/azul, caveira = Fora-da-Lei/vermelha).
-// O placeholder __U__ vira um id único por chamada.
-const _CHIP_FRENTE_AZ = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><circle cx="100" cy="100" r="96" fill="#2563eb" stroke="#1d4ed8" stroke-width="6"/><circle cx="100" cy="100" r="86" fill="none" stroke="#2563eb" stroke-width="21"/><circle cx="100" cy="100" r="86" fill="none" stroke="#fff" stroke-width="21" stroke-dasharray="33.77 33.77" stroke-dashoffset="16.89"/><circle cx="100" cy="100" r="74" fill="#2563eb" stroke="#1d4ed8" stroke-width="3.5"/><path d="M 152.0,59.4 A 66,66 0 0 1 152.0,140.6" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="1 7.5" stroke-linecap="round" opacity="0.85"/><path d="M 48.0,140.6 A 66,66 0 0 1 48.0,59.4" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="1 7.5" stroke-linecap="round" opacity="0.85"/><defs><path id="__U__aTfa" d="M 45,104 A 55,55 0 0 1 155,104"/><path id="__U__aBfa" d="M 47,112 A 53,53 0 0 0 153,112"/></defs><text font-family="Bebas Neue, sans-serif" font-size="18" letter-spacing="3.5" fill="#fff"><textPath href="#__U__aTfa" startOffset="50%" text-anchor="middle">SALOON</textPath></text><text font-family="Bebas Neue, sans-serif" font-size="14" letter-spacing="2.5" fill="#fff" opacity="0.9"><textPath href="#__U__aBfa" startOffset="50%" text-anchor="middle">&#9733; RED ROCK &#9733;</textPath></text><g transform="translate(100 99) scale(0.86) translate(-50 -50)"><g><defs><g id="__U__sfa"><polygon points="50.0,16.0 59.1,39.5 84.2,40.9 64.7,56.8 71.2,81.1 50.0,67.5 28.8,81.1 35.3,56.8 15.8,40.9 40.9,39.5"/><circle cx="50.0" cy="16.0" r="7"/><circle cx="84.2" cy="40.9" r="7"/><circle cx="71.2" cy="81.1" r="7"/><circle cx="28.8" cy="81.1" r="7"/><circle cx="15.8" cy="40.9" r="7"/></g></defs><use href="#__U__sfa" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="7" stroke-linejoin="round"/><use href="#__U__sfa" fill="#fff"/><circle cx="50" cy="52" r="10.5" fill="none" stroke="#1d4ed8" stroke-width="3.5"/></g></g></svg>`;
-const _CHIP_FRENTE_VM = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><circle cx="100" cy="100" r="96" fill="#dc2626" stroke="#b91c1c" stroke-width="6"/><circle cx="100" cy="100" r="86" fill="none" stroke="#dc2626" stroke-width="21"/><circle cx="100" cy="100" r="86" fill="none" stroke="#fff" stroke-width="21" stroke-dasharray="33.77 33.77" stroke-dashoffset="16.89"/><circle cx="100" cy="100" r="74" fill="#dc2626" stroke="#b91c1c" stroke-width="3.5"/><path d="M 152.0,59.4 A 66,66 0 0 1 152.0,140.6" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="1 7.5" stroke-linecap="round" opacity="0.85"/><path d="M 48.0,140.6 A 66,66 0 0 1 48.0,59.4" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="1 7.5" stroke-linecap="round" opacity="0.85"/><defs><path id="__U__aTfv" d="M 45,104 A 55,55 0 0 1 155,104"/><path id="__U__aBfv" d="M 47,112 A 53,53 0 0 0 153,112"/></defs><text font-family="Bebas Neue, sans-serif" font-size="18" letter-spacing="3.5" fill="#fff"><textPath href="#__U__aTfv" startOffset="50%" text-anchor="middle">SALOON</textPath></text><text font-family="Bebas Neue, sans-serif" font-size="14" letter-spacing="2.5" fill="#fff" opacity="0.9"><textPath href="#__U__aBfv" startOffset="50%" text-anchor="middle">&#9733; RED ROCK &#9733;</textPath></text><g transform="translate(100 99) scale(0.86) translate(-50 -50)"><g><defs><path id="__U__sfv" d="M50 10 C27 10 15 26 15 44 C15 56 21 63 28 67 L28 78 Q28 85 35 85 L65 85 Q72 85 72 78 L72 67 C79 63 85 56 85 44 C85 26 73 10 50 10 Z"/></defs><use href="#__U__sfv" fill="#991b1b" stroke="#991b1b" stroke-width="7" stroke-linejoin="round"/><use href="#__U__sfv" fill="#fff"/><ellipse cx="36.5" cy="46" rx="9.5" ry="11" fill="#dc2626"/><ellipse cx="63.5" cy="46" rx="9.5" ry="11" fill="#dc2626"/><path d="M50 58 L43.5 69 Q50 73 56.5 69 Z" fill="#dc2626"/><rect x="41.5" y="76" width="4" height="9" rx="2" fill="#dc2626"/><rect x="54.5" y="76" width="4" height="9" rx="2" fill="#dc2626"/></g></g></svg>`;
-const _CHIP_VERSO     = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><g transform="translate(200 0) scale(-1 1)"><circle cx="100" cy="100" r="96" fill="#881337" stroke="#6b0f2b" stroke-width="6"/><circle cx="100" cy="100" r="86" fill="none" stroke="#881337" stroke-width="21"/><circle cx="100" cy="100" r="86" fill="none" stroke="#fff" stroke-width="21" stroke-dasharray="33.77 33.77" stroke-dashoffset="16.89"/><circle cx="100" cy="100" r="74" fill="#881337" stroke="#6b0f2b" stroke-width="3.5"/><line x1="140.0" y1="100.0" x2="164.0" y2="100.0" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="134.6" y1="120.0" x2="155.4" y2="132.0" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="120.0" y1="134.6" x2="132.0" y2="155.4" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="100.0" y1="140.0" x2="100.0" y2="164.0" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="80.0" y1="134.6" x2="68.0" y2="155.4" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="65.4" y1="120.0" x2="44.6" y2="132.0" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="60.0" y1="100.0" x2="36.0" y2="100.0" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="65.4" y1="80.0" x2="44.6" y2="68.0" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="80.0" y1="65.4" x2="68.0" y2="44.6" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="100.0" y1="60.0" x2="100.0" y2="36.0" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="120.0" y1="65.4" x2="132.0" y2="44.6" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><line x1="134.6" y1="80.0" x2="155.4" y2="68.0" stroke="#fff" stroke-width="3" opacity="0.5" stroke-linecap="round"/><circle cx="100" cy="100" r="40" fill="#6b0f2b" stroke="#fff" stroke-width="3"/><text x="100" y="117" font-family="Bebas Neue, sans-serif" font-size="46" text-anchor="middle" fill="#fff">&#9733;</text></g></svg>`;
-
-let _chipUid = 0;
-function _withUid(tpl) {
-    _chipUid += 1;
-    return tpl.split('__U__').join('c' + _chipUid);
+function _chipArt(tipo, dentro) {
+    return `<img class="chip-art ${tipo}" src="${CHIP_ART[tipo]}" alt="" draggable="false">`
+         + (dentro || '');
 }
 
-// Anel base (gomos de cassino) — usado pelas variantes numerada/mini/rejeição
-function _chipRings(base, dark, deco) {
-    const circ = 2 * Math.PI * 86, dash = circ / 16;
-    let s = `<circle cx="100" cy="100" r="96" fill="${base}" stroke="${dark}" stroke-width="6"/>`
-        + `<circle cx="100" cy="100" r="86" fill="none" stroke="${base}" stroke-width="21"/>`
-        + `<circle cx="100" cy="100" r="86" fill="none" stroke="#fff" stroke-width="21" stroke-dasharray="${dash.toFixed(2)} ${dash.toFixed(2)}" stroke-dashoffset="${(dash/2).toFixed(2)}"/>`
-        + `<circle cx="100" cy="100" r="74" fill="${base}" stroke="${dark}" stroke-width="3.5"/>`;
-    if (deco) {
-        const p = (a) => [100 + 66*Math.cos(a*Math.PI/180), 100 + 66*Math.sin(a*Math.PI/180)];
-        const [rx1,ry1]=p(-38),[rx2,ry2]=p(38),[lx1,ly1]=p(142),[lx2,ly2]=p(218);
-        const c = 'fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="1 7.5" stroke-linecap="round" opacity="0.85"';
-        s += `<path d="M ${rx1.toFixed(1)},${ry1.toFixed(1)} A 66,66 0 0 1 ${rx2.toFixed(1)},${ry2.toFixed(1)}" ${c}/>`
-           + `<path d="M ${lx1.toFixed(1)},${ly1.toFixed(1)} A 66,66 0 0 1 ${lx2.toFixed(1)},${ly2.toFixed(1)}" ${c}/>`;
+// Ficha CHEIA (decisão e resultado): 'red' → caveira | 'blue' → estrela
+function chipFull(team) { return _chipArt(team === 'red' ? 'fora' : 'lei'); }
+
+// Verso NEUTRO — igual para os dois times; um verso por time entregaria a escolha
+function chipBack() { return _chipArt('estrela'); }
+
+// Ficha da trilha ainda não jogada: leva no centro o tamanho da equipe
+function chipBackNumbered(n) { return _chipArt('vazia', `<b class="chip-num">${n}</b>`); }
+
+// Frente da ficha da trilha depois de resolvida
+function missionFrontSVG(status) { return chipFull(status === 'fail' ? 'red' : 'blue'); }
+
+// Mini-ficha de rejeição: vazia enquanto não aconteceu, caveira depois
+function rejectChipSVG(filled) { return _chipArt(filled ? 'fora' : 'vazia'); }
+
+// ════════════════════════════════════════════
+// VERSO DA CARTA — moldura dourada sobre vinho
+// ════════════════════════════════════════════
+// Simetria de 180° como em baralho de verdade: o miolo é desenhado uma vez
+// e repetido girado, então o verso "lê" igual de cabeça para baixo.
+// Camadas, de dentro para fora: medalhão (112) → louros (152) → texto (176).
+
+const CB = {
+    vinho: '#6d1026', escuro: '#42081a',
+    ouro: '#f5b93b', ouroClaro: '#ffd873', ouroEsc: '#b9781c',
+    cx: 250, cy: 350, w: 500, h: 700
+};
+
+const _cbPonto = (a, r) => [
+    CB.cx + r * Math.cos(a * Math.PI / 180),
+    CB.cy + r * Math.sin(a * Math.PI / 180)
+];
+
+function _cbEstrela(cx, cy, r, fill) {
+    const pts = [];
+    for (let i = 0; i < 10; i++) {
+        const raio = i % 2 === 0 ? r : r * 0.42;
+        const ang = -Math.PI / 2 + i * Math.PI / 5;
+        pts.push(`${(cx + raio * Math.cos(ang)).toFixed(1)},${(cy + raio * Math.sin(ang)).toFixed(1)}`);
+    }
+    return `<polygon points="${pts.join(' ')}" fill="${fill}"/>`;
+}
+
+// Losango de brilho (4 pontas)
+function _cbBrilho(cx, cy, r) {
+    const k = r * 0.2;
+    return `<path d="M${cx} ${cy - r} Q${cx + k} ${cy - k} ${cx + r} ${cy}`
+        + ` Q${cx + k} ${cy + k} ${cx} ${cy + r} Q${cx - k} ${cy + k} ${cx - r} ${cy}`
+        + ` Q${cx - k} ${cy - k} ${cx} ${cy - r} Z" fill="${CB.ouroClaro}"/>`;
+}
+
+// Ramo de louros do lado esquerdo: arco + folhas apontando para fora
+function _cbRamo() {
+    const R = 152;
+    const [x1, y1] = _cbPonto(-104, R);
+    const [x2, y2] = _cbPonto(104, R);
+    let s = `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${R} ${R} 0 1 0 ${x2.toFixed(1)} ${y2.toFixed(1)}"`
+        + ` fill="none" stroke="url(#cbOuro)" stroke-width="7" stroke-linecap="round"/>`;
+    for (const a of [-78, -52, -26, 0, 26, 52, 78]) {
+        const ang = 180 - a;                       // espelha para o lado esquerdo
+        const [px, py] = _cbPonto(ang, R);
+        s += `<g transform="translate(${px.toFixed(1)} ${py.toFixed(1)}) rotate(${(ang + 90).toFixed(1)})">`
+            + `<path d="M0 0 C16 -9 34 -6 42 6 C26 15 8 12 0 0 Z" fill="${CB.ouro}"/>`
+            + `<path d="M0 0 C16 9 34 6 42 -6 C26 -15 8 -12 0 0 Z" fill="${CB.ouroEsc}" opacity="0.75"/>`
+            + `</g>`;
     }
     return s;
 }
 
-// Naipe BRANCO para o centro (numeradas/mini usam só estrela/caveira)
-function _suitWhite(suitKey) {
-    if (suitKey === 'OUTLAW') return suitSkull('#fff', '#991b1b', '#dc2626');
-    if (suitKey === 'BOSS')   return suitBoss('#fff', '#991b1b', '#dc2626');
-    if (suitKey === 'DELEGADO') return suitDelegado('#fff', '#1d4ed8');
-    return suitStar('#fff', '#1d4ed8');
+// Medalhão do canto superior esquerdo
+function _cbCanto() {
+    return `<g>`
+        + `<path d="M52 140 A88 88 0 0 1 140 52" fill="none" stroke="${CB.ouro}" stroke-width="7" stroke-linecap="round"/>`
+        + `<path d="M52 168 A116 116 0 0 1 168 52" fill="none" stroke="${CB.ouro}" stroke-width="2.5" opacity="0.8"/>`
+        + `<path d="M104 60 C128 66 142 84 146 104 C126 100 110 84 104 60 Z" fill="${CB.ouro}"/>`
+        + `<path d="M60 104 C66 128 84 142 104 146 C100 126 84 110 60 104 Z" fill="${CB.ouro}"/>`
+        + _cbEstrela(96, 96, 25, CB.ouro)
+        + _cbEstrela(96, 96, 11, CB.vinho)
+        + `</g>`;
 }
 
-// Ficha CHEIA (resultado/decisão) — template aprovado, id único.
-// team 'blue' → estrela (Lei) | 'red' → caveira (Fora-da-Lei)
-function chipFull(team, suitKey) {
-    return _withUid(team === 'red' ? _CHIP_FRENTE_VM : _CHIP_FRENTE_AZ);
-}
+function cardBackSVG() {
+    const { w: W, h: H, cx, cy } = CB;
+    const R_TXT = 176;
+    const [ax, ay] = _cbPonto(180, R_TXT);
+    const [bx, by] = _cbPonto(0, R_TXT);
 
-// Verso ÚNICO neutro vinho (sem IDs, seguro repetir)
-function chipBack() {
-    return _CHIP_VERSO;
-}
+    const espelhoH = g => `<g transform="translate(${W} 0) scale(-1 1)">${g}</g>`;
+    const giro180 = g => `<g transform="rotate(180 ${cx} ${cy})">${g}</g>`;
 
-// Ficha NUMERADA (trilha de missões): número + naipe mini no topo
-function chipNumber(team, suitKey, n) {
-    const c = CHIP_C[team];
-    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${_chipRings(c.base, c.dark, true)}`
-        + `<g transform="translate(100 56) scale(0.36) translate(-50 -50)">${_suitWhite(suitKey)}</g>`
-        + `<text x="100" y="158" font-family="Bebas Neue, sans-serif" font-size="92" text-anchor="middle" fill="#fff" stroke="${c.dark}" stroke-width="7" paint-order="stroke" stroke-linejoin="round">${n}</text></svg>`;
-}
+    const louros = _cbRamo() + espelhoH(_cbRamo());
+    const texto = `<text><textPath href="#cbArco" startOffset="50%" text-anchor="middle">SALOON</textPath></text>`;
 
-// Ficha PENDENTE (trilha, ainda não jogada): neutra branca com naipe vinho fraco
-function chipPending(n) {
-    const circ = 2 * Math.PI * 86, dash = circ / 16;
-    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">`
-        + `<circle cx="100" cy="100" r="96" fill="#fff" stroke="#881337" stroke-width="6"/>`
-        + `<circle cx="100" cy="100" r="86" fill="none" stroke="#fff" stroke-width="21"/>`
-        + `<circle cx="100" cy="100" r="86" fill="none" stroke="#881337" stroke-width="21" stroke-dasharray="${dash.toFixed(2)} ${dash.toFixed(2)}" stroke-dashoffset="${(dash/2).toFixed(2)}" opacity="0.85"/>`
-        + `<circle cx="100" cy="100" r="74" fill="#fff" stroke="#881337" stroke-width="3.5"/>`
-        + `<text x="100" y="138" font-family="Bebas Neue, sans-serif" font-size="92" text-anchor="middle" fill="#881337">${n}</text></svg>`;
-}
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`
+        + `<defs>`
+        + `<radialGradient id="cbFundo" cx="50%" cy="45%" r="70%">`
+        + `<stop offset="0%" stop-color="#86152f"/><stop offset="100%" stop-color="${CB.vinho}"/></radialGradient>`
+        + `<linearGradient id="cbOuro" x1="0" y1="0" x2="0" y2="1">`
+        + `<stop offset="0%" stop-color="${CB.ouroClaro}"/><stop offset="100%" stop-color="${CB.ouroEsc}"/></linearGradient>`
+        + `<path id="cbArco" d="M${ax.toFixed(1)} ${ay.toFixed(1)} A${R_TXT} ${R_TXT} 0 0 1 ${bx.toFixed(1)} ${by.toFixed(1)}"/>`
+        + `</defs>`
 
-// Verso da ficha COM número da missão (selo central sobre o verso oficial).
-// Usado na trilha para missões que ainda não aconteceram.
-function chipBackNumbered(n) {
-    const selo = `<circle cx="100" cy="100" r="34" fill="#6b0f2b" stroke="#fff" stroke-width="3"/>`
-        + `<text x="100" y="118" font-family="Bebas Neue, sans-serif" font-size="40" text-anchor="middle" fill="#fff">${n}</text>`;
-    return _CHIP_VERSO.replace('</svg>', selo + '</svg>');
-}
+        + `<rect width="${W}" height="${H}" rx="34" fill="url(#cbFundo)"/>`
+        + `<rect x="7" y="7" width="${W - 14}" height="${H - 14}" rx="28" fill="none" stroke="${CB.escuro}" stroke-width="14"/>`
+        + `<rect x="26" y="26" width="${W - 52}" height="${H - 52}" rx="22" fill="none" stroke="url(#cbOuro)" stroke-width="7"/>`
+        + `<rect x="40" y="40" width="${W - 80}" height="${H - 80}" rx="16" fill="none" stroke="${CB.ouro}" stroke-width="2.5" opacity="0.75"/>`
 
-// Frente da ficha de RESULTADO da trilha (sem número, naipe + textos).
-// sucesso → azul (estrela) | falha → vermelha (caveira)
-function missionFrontSVG(status) {
-    return chipFull(status === 'fail' ? 'red' : 'blue', status === 'fail' ? 'OUTLAW' : 'LAW');
-}
+        + _cbCanto() + espelhoH(_cbCanto())
+        + `<g transform="translate(0 ${H}) scale(1 -1)">${_cbCanto()}</g>`
+        + `<g transform="translate(${W} ${H}) scale(-1 -1)">${_cbCanto()}</g>`
 
-// Ficha da trilha de missões conforme o estado:
-//   pendente → neutra branca com número | sucesso → azul (estrela) | falha → vermelha (caveira)
-function missionChipSVG(number, status) {
-    if (status === 'success') return chipNumber('blue', 'LAW', number);
-    if (status === 'fail')    return chipNumber('red', 'OUTLAW', number);
-    return chipPending(number);
-}
+        + louros
 
-// Mini-ficha de rejeição: pendente (neutra) ou preenchida (vermelha com caveira central)
-function rejectChipSVG(filled) {
-    if (filled) {
-        const c = CHIP_C.red;
-        return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${_chipRings(c.base, c.dark, true)}`
-            + `<g transform="translate(100 100) scale(0.92) translate(-50 -50)">${_suitWhite('OUTLAW')}</g></svg>`;
-    }
-    // pendente: anel neutro vazio
-    const circ = 2 * Math.PI * 86, dash = circ / 16;
-    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">`
-        + `<circle cx="100" cy="100" r="96" fill="#fff" stroke="#881337" stroke-width="6"/>`
-        + `<circle cx="100" cy="100" r="86" fill="none" stroke="#fff" stroke-width="21"/>`
-        + `<circle cx="100" cy="100" r="86" fill="none" stroke="#881337" stroke-width="21" stroke-dasharray="${dash.toFixed(2)} ${dash.toFixed(2)}" stroke-dashoffset="${(dash/2).toFixed(2)}" opacity="0.85"/>`
-        + `<circle cx="100" cy="100" r="74" fill="#fff" stroke="#881337" stroke-width="3.5"/></svg>`;
+        + _cbBrilho(cx, 150, 24) + _cbBrilho(cx, H - 150, 24)
+        + _cbBrilho(cx, 196, 11) + _cbBrilho(cx, H - 196, 11)
+
+        + `<circle cx="${cx}" cy="${cy}" r="118" fill="${CB.escuro}" opacity="0.3"/>`
+        + `<circle cx="${cx}" cy="${cy}" r="112" fill="none" stroke="url(#cbOuro)" stroke-width="9"/>`
+        + `<circle cx="${cx}" cy="${cy}" r="96" fill="none" stroke="${CB.ouro}" stroke-width="2.5" opacity="0.8"/>`
+        + _cbEstrela(cx, cy, 84, 'url(#cbOuro)')
+        + _cbEstrela(cx, cy, 29, CB.ouroClaro)
+
+        + `<g font-family="Bebas Neue, sans-serif" font-size="54" letter-spacing="8"`
+        + ` fill="url(#cbOuro)" stroke="${CB.escuro}" stroke-width="2.5" paint-order="stroke">`
+        + texto + giro180(texto)
+        + `</g>`
+        + `</svg>`;
 }

@@ -231,19 +231,9 @@ function showPhoneSummary(code) {
 // Não mexe nos listeners de status — é só visual.
 function reviewMyCard(code) {
     if (!myRoleData) { showPhoneSummary(code); return; }
-    showScreen('screen-online-role-reveal');
-    document.getElementById('online-ready-count').innerText = '';
-    runCardScene({
-        card:    'online-reveal-card',
-        inner:   'online-reveal-card-inner',
-        face:    'online-role-card-display',
-        btnFlip: 'online-btn-flip-card',
-        btnDone: 'btn-online-understood'
-    }, myRoleData, {
-        doneLabelKey: 'phone_back_summary',
-        keepCardOnDone: true,
-        onDone: () => { showPhoneSummary(code); }
-    });
+    showScreen('screen-mesa');
+    runRevealScene(myRoleData, onlineProfile.name, () => showPhoneSummary(code),
+        { direto: true, rotuloFim: t('phone_back_summary') });
 }
 
 function renderPhoneRoles(blocks) {
@@ -726,7 +716,7 @@ function renderScreenVoteResult(code, votes, approved, team, playerCount, timedO
             <div class="tela-code">SALA ${code}</div>
         </div>
         <div class="screen-vr-center">
-            <h1 class="screen-vr-title" style="color:${outcomeColor}">${approved ? '✅' : '❌'} ${outcomeTxt}</h1>
+            <h1 class="screen-vr-title" style="color:${outcomeColor}">${outcomeTxt}</h1>
             ${timedOut ? `<p class="tela-sub" style="color:#fff">${t('screen_vote_timeout')}</p>` : ''}
             <div class="screen-vr-cols">
                 <div class="screen-card vr-col">
