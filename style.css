@@ -158,6 +158,9 @@ body.bg-winner-outlaw::before {
 }
 .screen::-webkit-scrollbar { display: none !important; width: 0 !important; }
 .screen.active { display: flex; }
+/* Saída curta antes de uma cena grande (ex.: "Abrir a mesa!"). */
+.screen.saindo { animation: telaSai 0.26s ease-in forwards; pointer-events: none; }
+@keyframes telaSai { to { opacity: 0; transform: scale(0.97); } }
 /* "Voltar" entra pelo lado oposto, para a navegação ter direção. */
 .screen.volta { animation-name: telaVolta; }
 
@@ -640,10 +643,12 @@ input[type="text"]:focus {
     transform: translateX(-50%);
     z-index: 40;
 }
-/* Entram o conteúdo e os botões; os símbolos da câmera já nascem no lugar
-   dos do body, senão piscariam. */
-.scene-screen.active .scene-act,
-.scene-screen.active .scene-hud { animation: sceneIn 0.45s ease; }
+/* Entram só os textos e os botões: os símbolos da câmera já nascem no
+   lugar dos do body (senão piscariam), e animar os blocos do tamanho da
+   tela obrigava o celular a criar camadas gráficas enormes no toque,
+   o que dava uma travadinha. A mesa de baixo nem aparece nessa hora. */
+.scene-screen.active .act-pass > *,
+.scene-screen.active .scene-hud > * { animation: sceneIn 0.45s ease; }
 @keyframes sceneIn { from { opacity: 0; } to { opacity: 1; } }
 body.scene-mode { background: var(--ceu); background-color: #e3862b; }
 

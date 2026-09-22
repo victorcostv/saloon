@@ -888,7 +888,22 @@ campoNome().addEventListener('blur', () => fecharBarraNome());
 document.getElementById('barra-ok').addEventListener('click', () => { fecharBarraNome(); campoNome().blur(); });
 if (window.visualViewport) window.visualViewport.addEventListener('resize', _posicionaBarra);
 
-document.getElementById('btn-start-game').addEventListener('click', () => initializeGame());
+// A tela de extras sai num fade curto antes da mesa entrar. Desenhar a mesa
+// pela primeira vez custa um quadro a mais no celular; num corte seco isso
+// aparecia como uma travadinha, e com a tela já apagada ninguém vê.
+let abrindoMesa = false;
+document.getElementById('btn-start-game').addEventListener('click', () => {
+    if (abrindoMesa) return;
+    if (REDUCED_MOTION) return initializeGame();
+    abrindoMesa = true;
+    const tela = document.getElementById('screen-setup-advanced');
+    tela.classList.add('saindo');
+    setTimeout(() => {
+        tela.classList.remove('saindo');
+        abrindoMesa = false;
+        initializeGame();
+    }, 260);
+});
 
 // ============================================
 // INICIALIZAÇÃO DA PARTIDA
