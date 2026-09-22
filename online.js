@@ -7,16 +7,6 @@
 // tabuleiro, resultado — vem do jogo compartilhado (fx.js, art.js).
 // Sincronização: Firebase Realtime Database, sala em rooms/<CÓDIGO>.
 
-// ── Lâmpada inteligente (Tuya): acende com a cor do momento. Opcional. ──
-const TUYA_WORKER = 'https://ancient-dream-9c02.victorcostv.workers.dev';
-function setLight(color) {
-    try {
-        if (typeof fetch === 'function') {
-            fetch(`${TUYA_WORKER}/?color=${color}`).catch(() => {});
-        }
-    } catch (e) { /* luz é opcional, nunca interrompe o jogo */ }
-}
-
 let onlineProfile = { name: '', avatar: '' };
 let currentRoom = null;
 // MODO TELA: true se este dispositivo criou a sala (é o telão, não joga)
@@ -39,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('screen-splash').onclick = () => {
         AudioManager.startBGM();
         showHamburger();
-        setLight('orange');
         showScreen('screen-mode-select');
     };
     document.getElementById('menu-home-btn').onclick = async () => {
@@ -102,7 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
         onlineProfile.name = nome;
         // Quem veio pelo QR não passou pela tela inicial: a música começa aqui.
         AudioManager.startBGM();
-        setLight('orange');
         if (pendingRoomCode) {
             const codigo = pendingRoomCode;
             pendingRoomCode = null;
@@ -948,7 +936,6 @@ function showMissionResultNormal(code, result) {
         const failsRequired  = config.twoFailsRequired === missionIdx ? 2 : 1;
         const missionSuccess = sabotages < failsRequired;
         const total = result.total || config.missions[missionIdx];
-        setTimeout(() => setLight(missionSuccess ? 'blue' : 'red'), 900);
 
         const waitEl = document.getElementById('online-mission-result-waiting');
         waitEl.classList.add('hidden'); // só reaparece após a animação, p/ não-xerife
@@ -989,8 +976,6 @@ function showMissionResultNormal(code, result) {
                     } else if (winsOutlaw >= 3) {
                         updates['status'] = 'gameover_outlaw_missions';
                     } else {
-                        // jogo continua: volta ao estado neutro
-                        setLight('orange');
                         updates['currentMissionIndex'] = missionIdx + 1;
                         if ((missionIdx === 1 || missionIdx === 2) && room.extras && room.extras.revolver && room.revolverOwnerName) {
                             updates['status'] = 'duel_choose';
@@ -1354,11 +1339,9 @@ function showOnlineGameOver(code, room, winner, reason) {
     if (winner === 'LAW') {
         AudioManager.playSFX('success');
         document.body.classList.add('bg-winner-law');
-        setLight('blue');
     } else {
         AudioManager.playSFX('fail');
         document.body.classList.add('bg-winner-outlaw');
-        setLight('red');
     }
 
     const players = room.players ? Object.values(room.players) : [];

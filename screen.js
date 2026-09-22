@@ -934,7 +934,6 @@ function renderScreenMissionResult(code, room) {
         } else if (winsOutlaw >= 3) {
             updates['status'] = 'gameover_outlaw_missions';
         } else {
-            setLight('orange');
             updates['currentMissionIndex'] = missionIdx + 1;
             if ((missionIdx === 1 || missionIdx === 2) && room.extras && room.extras.revolver && room.revolverOwnerName) {
                 updates['status'] = 'duel_choose';
@@ -949,7 +948,6 @@ function renderScreenMissionResult(code, room) {
 
     // Animação completa de fichas (suspense sempre na vermelha; aleatório na
     // última azul de missões limpas) — a mesma do jogo normal.
-    setLight(missionSuccess ? 'blue' : 'red');
     playMissionResult({
         rowId: 'screen-result-chip-row',
         boardId: 'screen-sabotage-board',
@@ -1024,7 +1022,6 @@ function renderScreenDuelResult(code, room) {
     else if (!sShoot && !tShoot) txt = t('duel_both_down');
     else txt = t('duel_mixed');
 
-    setLight('red');
     content.innerHTML = `
         <div class="tela-top">
             <div class="tela-brand">★ SALOON ★</div>
@@ -1036,7 +1033,6 @@ function renderScreenDuelResult(code, room) {
             <p class="tela-sub" style="color:#fff">${txt.replace(/<[^>]+>/g, '')}</p>
             <p class="screen-dust">· · · ${t('screen_duel_resolved')} · · ·</p>
         </div>`;
-    setTimeout(() => setLight('orange'), 2000);
 }
 // ============================================
 // TELÃO — ADIVINHAÇÃO DO CHEFE (suspense)
@@ -1075,7 +1071,6 @@ function renderScreenGameOver(code, room, status) {
     else if (status === 'gameover_boss_fail') { winner = 'LAW'; reason = t('win_boss_missed'); }
     else { winner = 'LAW'; reason = ''; }
 
-    setLight(winner === 'LAW' ? 'blue' : 'red');
 
     const winnerColor = winner === 'LAW' ? 'var(--law)' : 'var(--outlaw)';
     const winnerTxt = winner === 'LAW' ? t('law_wins') : t('outlaw_wins');

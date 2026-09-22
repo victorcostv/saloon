@@ -971,6 +971,8 @@ body.scene-mode #btn-hamburger { display: none !important; }
     transition: transform 0.1s, box-shadow 0.1s;
 }
 .menu-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--vinho); }
+/* Vibração some onde o aparelho não vibra (iPhone no navegador). */
+.menu-btn[hidden] { display: none; }
 
 .menu-lang {
     border: 4px solid var(--vinho);
@@ -1345,13 +1347,104 @@ body.scene-mode #btn-hamburger { display: none !important; }
     padding: 0;
     justify-content: center;
     align-items: center;
+    /* Quem anima a entrada é a abertura (logo e deserto), não a tela. */
+    animation: none;
 }
 #screen-splash img {
     width: 46%;
     max-width: 34vh;
+    /* Sobe o logo para o meio do céu, acima das montanhas. */
+    margin-bottom: calc(var(--terra-h) * 0.8);
     filter: drop-shadow(0 8px 0 rgba(81, 37, 3, 0.3));
     animation: splashBreath 3s ease-in-out infinite;
+    transition: opacity 0.5s ease 0.45s, scale 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.25) 0.45s;
 }
+.splash-cta { transition: opacity 0.5s ease 0.9s; }
+/* Estado antes da entrada, sem transição: no iPhone a página ganha um
+   estilo provisório antes do style.css, e daí sairia uma transição falsa
+   que deixa o logo aparecendo antes da hora. */
+body.ab-inicio #screen-splash img { opacity: 0; scale: 0.85; transition: none; }
+body.ab-inicio .splash-cta { opacity: 0; transition: none; }
+body.ab-saindo #screen-splash img { opacity: 0; scale: 0.8; transition: opacity 0.3s ease-in, scale 0.3s ease-in; }
+body.ab-saindo .splash-cta { opacity: 0; transition: opacity 0.2s; }
+
+/* ── Abertura ──
+   O deserto da tela inicial, em camadas recortadas da arte do usuário
+   (images/abertura/): céu em degradê, nuvens soltas e a terra (montanhas,
+   chão e cactos). Entra quando o app abre; no toque, a terra desce, as
+   nuvens sobem, o céu some e fica o padrão do jogo. */
+:root {
+    /* Altura da terra na tela; a arte tem 466px de altura. */
+    --terra-h: max(30dvh, calc(100vw * 466 / 1024));
+}
+#abertura {
+    --px: calc(var(--terra-h) / 466);   /* 1px da arte na tela */
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+    background: #bd7c38;
+    pointer-events: none;
+    transition: opacity 0.45s ease 0.55s;
+}
+.ab-ceu {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, #e3862b 0%, #f0a736 calc(100% - var(--terra-h)), #f7ca4a calc(100% - var(--terra-h) * 0.6));
+    transition: opacity 0.5s ease 0.15s;
+}
+.ab-terra {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    height: var(--terra-h);
+    width: auto;
+    max-width: none;
+    translate: -50% 0;
+    transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.25, 1) 0.2s;
+}
+.ab-nuvem {
+    position: absolute;
+    transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.25, 1) 0.3s;
+}
+.ab-nuvem img {
+    display: block;
+    height: auto;
+    animation: nuvemVaga 10s ease-in-out infinite alternate;
+}
+/* A 1 e a 4 são cortadas na borda da arte: ficam coladas na borda da
+   tela e só vagam para fora, para o corte nunca aparecer. */
+.n1 { top: 10%; left: 0; }
+.n1 img { width: calc(165 * var(--px)); --vaga: -16px; animation-duration: 11s; }
+.n2 { top: 56%; left: -6%; transition-delay: 0.4s; }
+.n2 img { width: calc(289 * var(--px)); --vaga: 20px; animation-duration: 13s; }
+.n3 { top: 18%; right: 12%; transition-delay: 0.35s; }
+.n3 img { width: calc(181 * var(--px)); --vaga: -18px; animation-duration: 9s; }
+.n4 { top: 47%; right: 0; transition-delay: 0.45s; }
+.n4 img { width: calc(150 * var(--px)); --vaga: 14px; animation-duration: 10s; }
+@keyframes nuvemVaga {
+    from { translate: 0 0; }
+    to   { translate: var(--vaga) 0; }
+}
+
+body.ab-inicio .ab-ceu   { opacity: 0; }
+body.ab-inicio .ab-terra { transform: translateY(100%); }
+body.ab-inicio .ab-nuvem { transform: translateY(-75dvh); }
+body.ab-inicio #abertura, body.ab-inicio #abertura * { transition: none; }
+
+body.ab-saindo .ab-terra {
+    transform: translateY(105%);
+    transition: transform 0.65s cubic-bezier(0.55, 0, 0.8, 0.35);
+}
+body.ab-saindo .ab-nuvem {
+    transform: translateY(-75dvh);
+    transition: transform 0.7s cubic-bezier(0.55, 0, 0.8, 0.35);
+}
+body.ab-saindo .n2 { transition-delay: 0.04s; }
+body.ab-saindo .n3 { transition-delay: 0.08s; }
+body.ab-saindo .n4 { transition-delay: 0.02s; }
+body.ab-saindo .ab-ceu { opacity: 0; transition: opacity 0.4s ease 0.2s; }
+body.ab-saindo #abertura { opacity: 0; }
 @keyframes splashBreath {
     0%, 100% { transform: scale(1); }
     50%      { transform: scale(1.03); }

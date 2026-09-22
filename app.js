@@ -200,13 +200,20 @@ const AudioManager = {
 const Haptics = {
     // Navegadores bloqueiam vibrate() enquanto não houver um toque real na página.
     userGestured: false,
+    // Independente do som: dá para jogar em silêncio e ainda sentir o jogo.
+    ligado: true,
 
     get plugin() {
         return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
     },
 
+    // O iPhone no navegador não vibra (Safari não tem vibrate()).
+    get disponivel() {
+        return !!(this.plugin || navigator.vibrate);
+    },
+
     fire(nativeCall, pattern) {
-        if (AudioManager.isMuted) return;
+        if (!this.ligado) return;
         const p = this.plugin;
         if (p) {
             nativeCall(p).catch(() => {});
@@ -223,11 +230,34 @@ const Haptics = {
         this.fire(p => p.notification({ type }), fallbackPattern);
     },
 
-    tap()     { this.impact('LIGHT', 10); },
-    select()  { this.impact('MEDIUM', 20); },
-    thud()    { this.impact('HEAVY', 40); },
-    success() { this.notify('SUCCESS', [30, 60, 30]); },
-    failure() { this.notify('ERROR', [60, 40, 60, 40, 120]); }
+    // Tremida contínua na força máxima, para os momentos grandes.
+    buzz(ms) {
+        this.fire(p => p.vibrate({ duration: ms }), ms);
+    },
+
+    tap()     { this.impact('MEDIUM', 15); },
+    select()  { this.impact('HEAVY', 30); },
+    thud()    { this.buzz(220); },
+    success() { this.notify('SUCCESS', [40, 60, 40]); },
+    failure() {
+        this.notify('ERROR', [80, 50, 80, 50, 200]);
+        if (this.plugin) setTimeout(() => this.buzz(300), 350);
+    },
+
+    alterna() {
+        this.ligado = !this.ligado;
+        this.rotulo();
+        this.select();
+    },
+
+    rotulo() {
+        const btn = document.getElementById('menu-vibra-btn');
+        if (!btn) return;
+        btn.hidden = !this.disponivel;
+        const chave = this.ligado ? 'vibration_on' : 'vibration_off';
+        btn.setAttribute('data-i18n', chave);
+        btn.innerText = t(chave);
+    }
 };
 
 // ============================================
@@ -377,6 +407,8 @@ document.addEventListener('DOMContentLoaded', () => {
         AudioManager.toggle();
     };
     AudioManager.rotulo();
+    document.getElementById('menu-vibra-btn').onclick = () => Haptics.alterna();
+    Haptics.rotulo();
 
     document.getElementById('menu-tutorial-btn').onclick = () => {
         SideMenu.close();
@@ -439,12 +471,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showScreen('screen-splash');
 
+    // ---- Abertura: o deserto entra quando as imagens já estão prontas ----
+    // Antes disso a tela é só a cor lisa, igual à splash nativa. Sem esperar
+    // a decodificação, os primeiros quadros travam e a entrada passa sem
+    // ninguém ver.
+    let entrou = false;
+    const entra = () => {
+        if (entrou) return;
+        entrou = true;
+        const tira = () => document.body.classList.remove('ab-inicio');
+        // No site não há deserto em camadas: o logo aparece sem esperar quadro.
+        if (!document.getElementById('abertura')) return tira();
+        requestAnimationFrame(() => requestAnimationFrame(tira));
+    };
+    const imagens = [...document.querySelectorAll('#abertura img, #screen-splash img')];
+    Promise.all(imagens.map(i => i.decode ? i.decode().catch(() => {}) : null)).then(entra);
+    setTimeout(entra, 2500);
+
     // ---- Splash: primeiro toque inicia BGM e abre direto o setup ----
+    // O deserto sai (terra desce, nuvens sobem) e a tela de jogadores
+    // entra por cima do padrão. No site não há deserto: vai direto.
+    let saindo = false;
     document.getElementById('screen-splash').onclick = () => {
+        if (saindo) return;
+        saindo = true;
         AudioManager.startBGM();
-        showHamburger();
-        updateSetupUI();
-        showScreen('screen-setup-players');
+        Haptics.select();
+        const abertura = document.getElementById('abertura');
+        const segue = () => {
+            showHamburger();
+            updateSetupUI();
+            showScreen('screen-setup-players');
+        };
+        if (!abertura) return segue();
+        document.body.classList.remove('ab-inicio');
+        document.body.classList.add('ab-saindo');
+        setTimeout(segue, 600);
+        setTimeout(() => {
+            abertura.remove();
+            document.body.classList.remove('ab-saindo');
+        }, 1200);
     };
 
     // ---- Navegação de telas ----

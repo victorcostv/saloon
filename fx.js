@@ -205,7 +205,7 @@ function runRevealScene(roleData, targetName, onDone, opts = {}) {
 
         bFlip.onclick = () => {
             AudioManager.playSFX('card');
-            Haptics.tap();
+            Haptics.select();
             mesaMostrar(null);
             card.classList.add('big');
             setTimeout(() => inner.classList.add('flipped'), mesaEspera(220));

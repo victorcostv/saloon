@@ -156,6 +156,8 @@ const I18N = {
         menu: 'Saloon',
         sound_on: 'Som ativado',
         sound_off: 'Som desativado',
+        vibration_on: 'Vibração ativada',
+        vibration_off: 'Vibração desativada',
         language: 'Idioma',
         home_screen: 'Tela inicial',
 
@@ -360,6 +362,8 @@ const I18N = {
         menu: 'Saloon',
         sound_on: 'Sound on',
         sound_off: 'Sound off',
+        vibration_on: 'Vibration on',
+        vibration_off: 'Vibration off',
         language: 'Language',
         home_screen: 'Home screen',
 
