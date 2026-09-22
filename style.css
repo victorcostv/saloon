@@ -642,6 +642,10 @@ input[type="text"]:focus {
     width: var(--sw);
     transform: translateX(-50%);
     z-index: 40;
+    /* A cena não desliza como as outras telas: a animação de entrada delas
+       mexe no transform e desfazia a centralização acima (a mesa entrava
+       meia tela para o lado e depois pulava de volta). */
+    animation: none;
 }
 /* Entram só os textos e os botões: os símbolos da câmera já nascem no
    lugar dos do body (senão piscariam), e animar os blocos do tamanho da
