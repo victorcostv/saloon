@@ -17,6 +17,7 @@ body {
 }
 /* A mesa não traz o padrão de areia: o deserto do body aparece por trás. */
 .scene-cam { background: none; }
+body.scene-mode { background: #c87528 url('images/bg-deserto.png') center / cover no-repeat; }
 /* Sem a abertura em camadas do app: o logo fica no centro. */
 #screen-splash img { margin-bottom: 0; }
 

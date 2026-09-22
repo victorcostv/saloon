@@ -6,14 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Saloon</title>
     <meta name="description" content="Jogo de dedução social para 5 a 10 pessoas, em um único aparelho.">
-    <link rel="stylesheet" href="style.css?v=mucd42kb">
-    <link rel="stylesheet" href="web.css?v=mucd42kb">
+    <link rel="stylesheet" href="style.css?v=mud696t0">
+    <link rel="stylesheet" href="web.css?v=mud696t0">
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="images/icon.png">
     <link rel="apple-touch-icon" href="images/icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Saloon">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#bd7c38">
+    <meta name="theme-color" content="#e3862b">
     <style>
         html { touch-action: manipulation; }
     </style>
@@ -63,7 +64,7 @@
     <!-- ============================================
          SPLASH
          ============================================ -->
-    <section id="screen-splash" class="screen active">
+    <section id="screen-splash" class="screen active" role="button">
         <img src="images/logo.png" alt="Saloon">
         <p class="splash-cta" data-i18n="tap_start">Toque para entrar no saloon</p>
     </section>
@@ -97,7 +98,7 @@
     <section id="screen-setup-advanced" class="screen" style="padding-top:12px;">
         <h2 class="display text-center" style="font-size:1.7rem;margin-bottom:24px;" data-i18n="extras_title">Personagens extras</h2>
         <div class="advanced-cards-container cascata">
-            <div class="mode-card" id="card-roles" onclick="toggleExtra('roles')">
+            <div class="mode-card" id="card-roles" role="checkbox" aria-checked="false" onclick="toggleExtra('roles')">
                 <div class="card-check-container">
                     <input type="checkbox" id="chk-roles" class="hidden-check">
                     <span class="custom-checkbox"></span>
@@ -109,9 +110,9 @@
                     <span class="rule-title" data-i18n="extra_roles">Distintivo</span>
                     <span class="rule-sub" data-i18n="extra_roles_sub">Delegado e Chefe da Gangue</span>
                 </div>
-                <div class="info-btn" onclick="event.stopPropagation();showTutorial('DELEGADO')">i</div>
+                <div class="info-btn" role="button" data-i18n-aria="more_info" onclick="event.stopPropagation();showTutorial('DELEGADO')">i</div>
             </div>
-            <div class="mode-card" id="card-farsante" onclick="toggleExtra('farsante')">
+            <div class="mode-card" id="card-farsante" role="checkbox" aria-checked="false" onclick="toggleExtra('farsante')">
                 <div class="card-check-container">
                     <input type="checkbox" id="chk-farsante" class="hidden-check">
                     <span class="custom-checkbox"></span>
@@ -124,9 +125,9 @@
                     <span class="rule-sub" data-i18n="extra_farsante_sub">Escrivão e Falsificador</span>
                     <span class="rule-req" data-i18n="farsante_req">Requer Distintivo</span>
                 </div>
-                <div class="info-btn" onclick="event.stopPropagation();showTutorial('FARSANTE')">i</div>
+                <div class="info-btn" role="button" data-i18n-aria="more_info" onclick="event.stopPropagation();showTutorial('FARSANTE')">i</div>
             </div>
-            <div class="mode-card" id="card-revolver" onclick="toggleExtra('revolver')">
+            <div class="mode-card" id="card-revolver" role="checkbox" aria-checked="false" onclick="toggleExtra('revolver')">
                 <div class="card-check-container">
                     <input type="checkbox" id="chk-revolver" class="hidden-check">
                     <span class="custom-checkbox"></span>
@@ -138,7 +139,7 @@
                     <span class="rule-title" data-i18n="extra_revolver">Duelo</span>
                     <span class="rule-sub" data-i18n="extra_revolver_sub">Revólver carregado</span>
                 </div>
-                <div class="info-btn" onclick="event.stopPropagation();showTutorial('REVOLVER')">i</div>
+                <div class="info-btn" role="button" data-i18n-aria="more_info" onclick="event.stopPropagation();showTutorial('REVOLVER')">i</div>
             </div>
         </div>
         <div class="setup-actions">
@@ -311,9 +312,14 @@
     </section>
 
     <section id="screen-duel-result" class="screen">
-        <h2 class="display text-center" style="font-size:1.6rem;" data-i18n="duel_result_title">Resultado do duelo</h2>
-        <p id="duel-result-text" class="lore-text" style="font-size:1.25rem;margin:auto 0;"></p>
-        <button id="btn-duel-result-next" class="btn btn-primary lg mt-4" data-i18n="continue_game">Continuar o jogo</button>
+        <div class="pass-stage">
+            <p class="scene-eyebrow" data-i18n="duel_result_title">Resultado do duelo</p>
+            <h1 class="scene-name menor" id="duel-result-head"></h1>
+            <p class="scene-note" id="duel-result-text"></p>
+        </div>
+        <div class="pass-acao">
+            <button id="btn-duel-result-next" class="btn btn-primary" data-i18n="continue_game">Continuar o jogo</button>
+        </div>
     </section>
 
     <section id="screen-duel-reveal" class="screen">
@@ -731,13 +737,13 @@
     });
     const db = firebase.database();
 </script>
-<script src="i18n.js?v=mucd42kb"></script>
-<script src="i18n-web.js?v=mucd42kb"></script>
-<script src="art.js?v=mucd42kb"></script>
-<script src="fx.js?v=mucd42kb"></script>
-<script src="app.js?v=mucd42kb"></script>
-<script src="qrcode.js?v=mucd42kb"></script>
-<script src="online.js?v=mucd42kb"></script>
-<script src="screen.js?v=mucd42kb"></script>
+<script src="i18n.js?v=mud696t0"></script>
+<script src="i18n-web.js?v=mud696t0"></script>
+<script src="art.js?v=mud696t0"></script>
+<script src="fx.js?v=mud696t0"></script>
+<script src="app.js?v=mud696t0"></script>
+<script src="qrcode.js?v=mud696t0"></script>
+<script src="online.js?v=mud696t0"></script>
+<script src="screen.js?v=mud696t0"></script>
 </body>
 </html>

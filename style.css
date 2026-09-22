@@ -70,15 +70,27 @@
 
 html, body { overflow: hidden; }
 
-/* A cor lisa segura o fundo enquanto a arte carrega (e atrás do teclado). */
-html { background-color: #bd7c38; }
+/* O fundo do jogo é o céu da arte do deserto da tela inicial: quando o
+   cenário sai, o céu fica e os símbolos de faroeste aparecem por cima.
+   O degradê vai do laranja ao dourado pela tela inteira, com as pontas
+   suaves (curva em S), para não marcar nenhuma linha. A splash nativa
+   (ios/.../Splash.imageset) é o mesmo degradê.
+   --terra-h é a altura das montanhas na tela inicial. */
+:root {
+    --terra-h: max(30dvh, calc(100vw * 466 / 1024));
+    --ceu: linear-gradient(to bottom, #e3862b 0%, #e68e2e 25%, #ec9f36 50%, #f1b03d 75%, #f4b840 100%);
+}
+
+/* A cor do topo do céu segura o fundo enquanto a arte carrega (e atrás do teclado). */
+html { background-color: #e3862b; }
 
 body {
-    /* Arte de faroeste do jogo. images/fundo.jpg é um ciclo exato do
-       padrão (emenda invisível), então repete na vertical sem costura.
-       Largura = a da coluna do app, para os desenhos terem o mesmo tamanho
-       aqui e na cena da mesa. */
-    background: #bd7c38 url('images/fundo.jpg') 50% 0 / min(100vw, calc(100dvh * 9 / 16)) auto repeat;
+    /* Símbolos de faroeste (images/fundo-simbolos.png, recortados do padrão
+       original, ver scripts/recorta-simbolos.py) sobre o céu. O ladrilho é
+       um ciclo exato, então repete na vertical sem costura. Largura = a da
+       coluna do app, para os desenhos terem o mesmo tamanho aqui e na mesa. */
+    background: url('images/fundo-simbolos.png') 50% 0 / min(100vw, calc(100dvh * 9 / 16)) auto repeat, var(--ceu);
+    background-color: #e3862b;
     color: var(--vinho-escuro);
     font-family: var(--font-display);
     font-weight: 700;
@@ -355,7 +367,9 @@ input[type="text"]:focus {
    grayscale() virava um contorno oliva que parecia defeito, e
    preenchido claro deixava o texto branco ilegível. */
 .btn:disabled {
-    background: rgba(255, 255, 255, 0.78);
+    /* Cor sólida (não translúcida): no rodapé fixo, a lista rola por baixo
+       do botão e aparecia através dele. */
+    background: #fcebd3;
     color: var(--vinho-fraco);
     border-color: var(--vinho-fraco);
     box-shadow: 0 6px 0 rgba(136, 19, 55, 0.16) !important;
@@ -625,16 +639,22 @@ input[type="text"]:focus {
     width: var(--sw);
     transform: translateX(-50%);
     z-index: 40;
-    animation: sceneIn 0.45s ease;
 }
+/* Entram o conteúdo e os botões; os símbolos da câmera já nascem no lugar
+   dos do body, senão piscariam. */
+.scene-screen.active .scene-act,
+.scene-screen.active .scene-hud { animation: sceneIn 0.45s ease; }
 @keyframes sceneIn { from { opacity: 0; } to { opacity: 1; } }
+body.scene-mode { background: var(--ceu); background-color: #e3862b; }
 
 .scene-cam {
     position: absolute;
     top: 0; left: 0;
     width: 100%;
     height: 200dvh;
-    background: #bd7c38 url('images/fundo.jpg') 0 0 / 100% auto repeat-y;
+    /* Só os símbolos descem com a câmera; o céu fica parado no body
+       (que tira os dele enquanto a mesa está na tela). */
+    background: url('images/fundo-simbolos.png') 0 0 / 100% auto repeat-y;
     transform: translateY(0);
     transition: transform 0.85s cubic-bezier(0.62, 0.02, 0.24, 1);
     will-change: transform;
@@ -676,6 +696,8 @@ input[type="text"]:focus {
     max-width: 100%;
     overflow-wrap: anywhere;
 }
+/* Frases de manchete (resultado do duelo) são mais longas que um nome. */
+.scene-name.menor { font-size: clamp(2.1rem, 10vw, 3rem); letter-spacing: 1px; text-wrap: balance; }
 .scene-note {
     margin-top: 10px;
     max-width: 24ch;
@@ -740,19 +762,18 @@ body.scene-mode #btn-hamburger { display: none !important; }
 .card3d {
     position: absolute;
     left: 50%;
-    top: 44%;
-    width: 38%;
+    top: 45%;
+    width: 80%;
     aspect-ratio: 5 / 7;
-    transform: translate(-50%, -50%) rotate(-8deg);
+    /* Pequena é a carta grande em escala (38% ÷ 80%): crescer vira só um
+       zoom, que a placa de vídeo faz sem redesenhar a carta a cada quadro
+       (animar a largura travava no celular). */
+    transform: translate(-50%, -50%) translateY(-1dvh) rotate(-8deg) scale(0.475);
     perspective: 1400px;
-    transition: width 0.62s cubic-bezier(0.2, 0.8, 0.25, 1),
-                top 0.62s cubic-bezier(0.2, 0.8, 0.25, 1),
-                transform 0.62s cubic-bezier(0.2, 0.8, 0.25, 1);
+    transition: transform 0.62s cubic-bezier(0.2, 0.8, 0.25, 1);
 }
 .card3d.big {
-    width: 80%;
-    top: 45%;
-    transform: translate(-50%, -50%) rotate(0deg);
+    transform: translate(-50%, -50%) translateY(0) rotate(0deg) scale(1);
 }
 
 .card-inner {
@@ -929,7 +950,10 @@ body.scene-mode #btn-hamburger { display: none !important; }
 
 #side-menu-panel {
     position: fixed;
-    top: 0; right: -330px;
+    top: 0; right: 0;
+    /* Desliza com transform (a placa de vídeo move sem recalcular a
+       página); animar o "right" pesava no celular. */
+    transform: translateX(330px);
     width: 290px; height: 100%;
     background: #ffffff;
     border-left: 6px solid var(--vinho);
@@ -938,10 +962,10 @@ body.scene-mode #btn-hamburger { display: none !important; }
     flex-direction: column;
     padding: calc(76px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
     gap: 12px;
-    transition: right 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.05);
+    transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.05);
     box-shadow: -10px 0 0 rgba(136, 19, 55, 0.15);
 }
-#side-menu-panel.open { right: 0 !important; }
+#side-menu-panel.open { transform: none; }
 
 #side-menu-panel h2 {
     color: var(--vinho);
@@ -1326,6 +1350,18 @@ body.scene-mode #btn-hamburger { display: none !important; }
     margin-top: auto;
     flex-shrink: 0;
 }
+/* Telas baixas (iPhone SE e afins): a lista encolhe para os 7 nomes de uma
+   partida comum caberem inteiros, sem rolar, acima do botão. */
+@media (max-height: 760px) {
+    #screen-game-over #game-over-title { font-size: 1.7rem !important; }
+    #screen-game-over #game-over-reason { font-size: 0.95rem; line-height: 1.35; margin-bottom: 0; }
+    .roles-reveal-final { margin-top: 6px; }
+    .roles-reveal-final h3 { font-size: 1.1rem; margin-bottom: 4px; }
+    .roles-reveal-final h3.time-fora { margin-top: 10px; }
+    #final-law-list, #final-outlaw-list { gap: 4px; }
+    .roles-reveal-final .final-li { padding: 2px 14px 2px 6px; font-size: 1.15rem; border-width: 3px; }
+    .final-li .final-icone { width: 24px; height: 24px; }
+}
 
 /* ════════════════════════════════════════════
    AVISOS / DIVERSOS
@@ -1357,9 +1393,9 @@ body.scene-mode #btn-hamburger { display: none !important; }
     margin-bottom: calc(var(--terra-h) * 0.8);
     filter: drop-shadow(0 8px 0 rgba(81, 37, 3, 0.3));
     animation: splashBreath 3s ease-in-out infinite;
-    transition: opacity 0.5s ease 0.45s, scale 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.25) 0.45s;
+    transition: opacity 0.5s ease 0.35s, scale 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.25) 0.35s;
 }
-.splash-cta { transition: opacity 0.5s ease 0.9s; }
+.splash-cta { transition: opacity 0.5s ease 0.8s; }
 /* Estado antes da entrada, sem transição: no iPhone a página ganha um
    estilo provisório antes do style.css, e daí sairia uma transição falsa
    que deixa o logo aparecendo antes da hora. */
@@ -1369,30 +1405,22 @@ body.ab-saindo #screen-splash img { opacity: 0; scale: 0.8; transition: opacity 
 body.ab-saindo .splash-cta { opacity: 0; transition: opacity 0.2s; }
 
 /* ── Abertura ──
-   O deserto da tela inicial, em camadas recortadas da arte do usuário
-   (images/abertura/): céu em degradê, nuvens soltas e a terra (montanhas,
-   chão e cactos). Entra quando o app abre; no toque, a terra desce, as
-   nuvens sobem, o céu some e fica o padrão do jogo. */
-:root {
-    /* Altura da terra na tela; a arte tem 466px de altura. */
-    --terra-h: max(30dvh, calc(100vw * 466 / 1024));
-}
+   A tela inicial é o deserto, em camadas recortadas da arte do usuário
+   (images/abertura/, ver scripts/recorta-deserto.py): o céu (o mesmo --ceu
+   do jogo), nuvens soltas e a terra (montanhas, chão e cactos). No toque, a
+   terra desce, as nuvens sobem e os símbolos do fundo carimbam no céu a
+   partir do dedo (montados em app.js). No fim a camada é idêntica ao fundo
+   do jogo e sai sem emenda. */
 #abertura {
     --px: calc(var(--terra-h) / 466);   /* 1px da arte na tela */
     position: fixed;
     inset: 0;
     z-index: 1;
     overflow: hidden;
-    background: #bd7c38;
+    background: var(--ceu);
     pointer-events: none;
-    transition: opacity 0.45s ease 0.55s;
 }
-.ab-ceu {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, #e3862b 0%, #f0a736 calc(100% - var(--terra-h)), #f7ca4a calc(100% - var(--terra-h) * 0.6));
-    transition: opacity 0.5s ease 0.15s;
-}
+#abertura.some { opacity: 0; transition: opacity 0.2s ease; }
 .ab-terra {
     position: absolute;
     bottom: 0;
@@ -1401,11 +1429,11 @@ body.ab-saindo .splash-cta { opacity: 0; transition: opacity 0.2s; }
     width: auto;
     max-width: none;
     translate: -50% 0;
-    transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.25, 1) 0.2s;
+    transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.25, 1) 0.1s;
 }
 .ab-nuvem {
     position: absolute;
-    transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.25, 1) 0.3s;
+    transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.25, 1) 0.2s;
 }
 .ab-nuvem img {
     display: block;
@@ -1416,21 +1444,19 @@ body.ab-saindo .splash-cta { opacity: 0; transition: opacity 0.2s; }
    tela e só vagam para fora, para o corte nunca aparecer. */
 .n1 { top: 10%; left: 0; }
 .n1 img { width: calc(165 * var(--px)); --vaga: -16px; animation-duration: 11s; }
-.n2 { top: 56%; left: -6%; transition-delay: 0.4s; }
+.n2 { top: 56%; left: -6%; transition-delay: 0.3s; }
 .n2 img { width: calc(289 * var(--px)); --vaga: 20px; animation-duration: 13s; }
-.n3 { top: 18%; right: 12%; transition-delay: 0.35s; }
+.n3 { top: 18%; right: 12%; transition-delay: 0.25s; }
 .n3 img { width: calc(181 * var(--px)); --vaga: -18px; animation-duration: 9s; }
-.n4 { top: 47%; right: 0; transition-delay: 0.45s; }
+.n4 { top: 47%; right: 0; transition-delay: 0.35s; }
 .n4 img { width: calc(150 * var(--px)); --vaga: 14px; animation-duration: 10s; }
 @keyframes nuvemVaga {
     from { translate: 0 0; }
     to   { translate: var(--vaga) 0; }
 }
-
-body.ab-inicio .ab-ceu   { opacity: 0; }
 body.ab-inicio .ab-terra { transform: translateY(100%); }
 body.ab-inicio .ab-nuvem { transform: translateY(-75dvh); }
-body.ab-inicio #abertura, body.ab-inicio #abertura * { transition: none; }
+body.ab-inicio #abertura * { transition: none; }
 
 body.ab-saindo .ab-terra {
     transform: translateY(105%);
@@ -1443,8 +1469,24 @@ body.ab-saindo .ab-nuvem {
 body.ab-saindo .n2 { transition-delay: 0.04s; }
 body.ab-saindo .n3 { transition-delay: 0.08s; }
 body.ab-saindo .n4 { transition-delay: 0.02s; }
-body.ab-saindo .ab-ceu { opacity: 0; transition: opacity 0.4s ease 0.2s; }
-body.ab-saindo #abertura { opacity: 0; }
+
+/* Os símbolos carimbam: nascem pequenos e girados e assentam no lugar.
+   Ficam atrás da terra e das nuvens, que saem da frente. */
+.ab-simbolos { position: absolute; inset: 0; }
+/* Os símbolos carimbam: nascem pequenos e girados e assentam no lugar. */
+.ab-simbolo {
+    position: absolute;
+    background: url('images/abertura/simbolos.png') no-repeat;
+    opacity: 0;
+    animation: simboloCarimba 0.46s cubic-bezier(0.3, 1.45, 0.5, 1) var(--atraso, 0s) both;
+}
+@keyframes simboloCarimba {
+    0%   { opacity: 0; transform: scale(0.25) rotate(var(--giro, 0deg)); }
+    45%  { opacity: 1; }
+    100% { opacity: 1; transform: none; }
+}
+    100% { opacity: 1; transform: none; }
+}
 @keyframes splashBreath {
     0%, 100% { transform: scale(1); }
     50%      { transform: scale(1.03); }

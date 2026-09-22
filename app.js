@@ -102,38 +102,76 @@ const AudioAssets = {
     thud:    'sounds/thud.wav'
 };
 
+// O áudio vai pelo Web Audio (AudioContext), não por <audio>: o iPhone trata
+// um <audio> como música de verdade e, com o app fechado, mostrava o jogo
+// como uma faixa pausada na tela bloqueada e na Central de Controle. O Web
+// Audio é o som "de jogo": não aparece ali, mistura com a música de outros
+// apps e segue a chave de silencioso do iPhone, como os outros jogos.
 const AudioManager = {
-    bgm: null,
-    sounds: {},
+    ctx: null,
+    buffers: {},
+    bgmGain: null,
+    sfxGain: null,
+    bgmSource: null,
     isInitialized: false,
     isMuted: false,
+    querMusica: false,      // a música já foi pedida (toca assim que carregar)
 
+    // Cria o contexto e já carrega os sons. Pode ser antes de qualquer toque:
+    // o contexto nasce suspenso e só toca depois de startBGM, que é um toque.
     init() {
         if (this.isInitialized) return;
+        this.isInitialized = true;
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
         try {
-            this.bgm = new Audio(AudioAssets.bgm);
-            this.bgm.loop = true;
-            this.bgm.volume = 0.3;
-            for (const key in AudioAssets) {
-                if (key !== 'bgm') {
-                    this.sounds[key] = new Audio(AudioAssets[key]);
-                    this.sounds[key].load();
-                }
-            }
-            this.isInitialized = true;
+            if (navigator.audioSession) navigator.audioSession.type = 'ambient';
+            this.ctx = new Ctx();
+            this.bgmGain = this.ctx.createGain();
+            this.bgmGain.gain.value = 0.3;
+            this.bgmGain.connect(this.ctx.destination);
+            this.sfxGain = this.ctx.createGain();
+            this.sfxGain.connect(this.ctx.destination);
+            for (const key in AudioAssets) this._carrega(key);
         } catch (e) {
             console.error("AudioManager: Init failed", e);
+            this.ctx = null;
         }
     },
 
+    _carrega(key) {
+        fetch(AudioAssets[key])
+            .then(r => r.arrayBuffer())
+            .then(dados => new Promise((ok, erro) => this.ctx.decodeAudioData(dados, ok, erro)))
+            .then(buffer => {
+                this.buffers[key] = buffer;
+                if (key === 'bgm') this._tocaMusica();
+            })
+            .catch(e => console.warn("AudioManager: não carregou", key, e));
+    },
+
+    // A música é um laço sem emenda; começa uma vez e segue até o app fechar.
+    _tocaMusica() {
+        if (!this.querMusica || this.bgmSource || !this.buffers.bgm) return;
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.buffers.bgm;
+        src.loop = true;
+        src.connect(this.bgmGain);
+        src.start();
+        this.bgmSource = src;
+    },
+
+    // O iPhone só deixa o som começar num toque; cada toque tenta de novo.
+    _liga() {
+        if (this.ctx && !this.isMuted && this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+    },
+
     toggle() {
-        if (!this.isInitialized) this.init();
+        this.init();
         this.isMuted = !this.isMuted;
-        if (this.isMuted) {
-            if (this.bgm) this.bgm.pause();
-        } else {
-            if (this.bgm) this.bgm.play().catch(e => console.warn("BGM play failed", e));
-            this.playSFX('click');
+        if (this.ctx) {
+            if (this.isMuted) this.ctx.suspend().catch(() => {});
+            else { this._liga(); this.playSFX('click'); }
         }
         this.rotulo();
     },
@@ -149,19 +187,19 @@ const AudioManager = {
     },
 
     startBGM() {
-        if (!this.isInitialized) this.init();
-        if (!this.isMuted && this.bgm) {
-            this.bgm.play().catch(e => console.warn("BGM play failed", e));
-        }
+        this.init();
+        this.querMusica = true;
+        this._liga();
+        if (this.ctx) this._tocaMusica();
         this.rotulo();
     },
 
-    // O app saiu da tela (fechado, trocado de app, tela bloqueada): a música
-    // para, e volta quando ele reaparece. Se o iOS não deixar tocar sem um
-    // toque na tela, ela volta no próximo toque.
+    // O app saiu da tela (fechado, trocado de app, tela bloqueada): o som
+    // para, e volta quando ele reaparece. Se o iOS não deixar voltar sem um
+    // toque na tela, volta no próximo toque.
     pausarPorFundo() {
-        if (this.bgm && !this.bgm.paused) {
-            this.bgm.pause();
+        if (this.ctx && this.ctx.state === 'running') {
+            this.ctx.suspend().catch(() => {});
             this._pausadaPorFundo = true;
         }
     },
@@ -169,25 +207,28 @@ const AudioManager = {
     voltarDoFundo() {
         if (!this._pausadaPorFundo) return;
         this._pausadaPorFundo = false;
-        if (this.isMuted || !this.bgm) return;
-        this.bgm.play().catch(() => {
-            document.addEventListener('pointerdown', () => {
-                if (!this.isMuted) this.bgm.play().catch(() => {});
-            }, { once: true });
-        });
+        if (this.isMuted || !this.ctx) return;
+        this.ctx.resume()
+            .then(() => { if (this.ctx.state !== 'running') throw new Error('suspenso'); })
+            .catch(() => document.addEventListener('pointerdown', () => this._liga(), { once: true }));
     },
 
     playSFX(type) {
-        if (this.isMuted) return;
-        const sfx = this.sounds[type];
-        if (sfx) {
-            if (type === 'success' || type === 'fail') {
-                if (this.bgm) this.bgm.volume = 0.05;
-                sfx.onended = () => { if (this.bgm) this.bgm.volume = 0.3; };
-            }
-            sfx.currentTime = 0;
-            sfx.play().catch(e => console.warn("SFX play failed", type, e));
+        if (this.isMuted || !this.ctx) return;
+        const buffer = this.buffers[type];
+        if (!buffer) return;
+        this._liga();
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+        src.connect(this.sfxGain);
+        // Vitória e derrota abaixam a música enquanto tocam.
+        if (type === 'success' || type === 'fail') {
+            const g = this.bgmGain.gain, agora = this.ctx.currentTime;
+            g.cancelScheduledValues(agora);
+            g.setTargetAtTime(0.05, agora, 0.05);
+            g.setTargetAtTime(0.3, agora + buffer.duration, 0.3);
         }
+        src.start();
     }
 };
 
@@ -384,6 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applyLanguage();
     initNative();
+    AudioManager.init();
 
     document.addEventListener('pointerdown', () => { Haptics.userGestured = true; }, { once: true });
 
@@ -458,6 +500,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => {
         const sel = e.target.closest('.selectable-item');
         if (sel) {
+            // Depois que o clique marca/desmarca, o leitor de tela fica sabendo.
+            const lista = sel.parentElement;
+            setTimeout(() => lista && lista.querySelectorAll('.selectable-item')
+                .forEach(i => i.setAttribute('aria-checked', i.classList.contains('selected'))), 0);
             AudioManager.playSFX('chip');
             Haptics.select();
             return;
@@ -471,28 +517,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showScreen('screen-splash');
 
-    // ---- Abertura: o deserto entra quando as imagens já estão prontas ----
+    // ---- Abertura: o logo entra quando as imagens já estão prontas ----
     // Antes disso a tela é só a cor lisa, igual à splash nativa. Sem esperar
     // a decodificação, os primeiros quadros travam e a entrada passa sem
-    // ninguém ver.
+    // ninguém ver. A folha de símbolos também já fica pronta para o toque.
     let entrou = false;
     const entra = () => {
         if (entrou) return;
         entrou = true;
         const tira = () => document.body.classList.remove('ab-inicio');
-        // No site não há deserto em camadas: o logo aparece sem esperar quadro.
+        // No site não há abertura: o logo aparece sem esperar quadro.
         if (!document.getElementById('abertura')) return tira();
         requestAnimationFrame(() => requestAnimationFrame(tira));
     };
     const imagens = [...document.querySelectorAll('#abertura img, #screen-splash img')];
+    if (document.getElementById('abertura')) {
+        const folha = new Image();
+        folha.src = 'images/abertura/simbolos.png';
+        imagens.push(folha);
+    }
     Promise.all(imagens.map(i => i.decode ? i.decode().catch(() => {}) : null)).then(entra);
     setTimeout(entra, 2500);
 
+    // As imagens da mesa (cartas, fichas) são decodificadas enquanto a
+    // pessoa digita os nomes; decodificar na primeira vez que aparecem
+    // travava a descida da câmera e o primeiro arremesso de fichas.
+    setTimeout(() => {
+        ['card-back.jpg', 'card-front-law.jpg', 'card-front-outlaw.jpg', 'chip-lei.png', 'chip-fora.png',
+         'chip-estrela.png', 'chip-num.png', 'revolver.png', 'badge_hat.png', 'exp-farsante.png']
+            .forEach(nome => {
+                const img = new Image();
+                img.src = 'images/' + nome;
+                if (img.decode) img.decode().catch(() => {});
+            });
+    }, 3000);
+
     // ---- Splash: primeiro toque inicia BGM e abre direto o setup ----
-    // O deserto sai (terra desce, nuvens sobem) e a tela de jogadores
-    // entra por cima do padrão. No site não há deserto: vai direto.
+    // A terra desce, as nuvens sobem, os símbolos do fundo carimbam no céu a
+    // partir do dedo e a tela de jogadores entra por cima. No site não há
+    // abertura: vai direto.
     let saindo = false;
-    document.getElementById('screen-splash').onclick = () => {
+    document.getElementById('screen-splash').onclick = (e) => {
         if (saindo) return;
         saindo = true;
         AudioManager.startBGM();
@@ -506,11 +571,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!abertura) return segue();
         document.body.classList.remove('ab-inicio');
         document.body.classList.add('ab-saindo');
-        setTimeout(segue, 600);
+        const fim = carimbaSimbolos(abertura, e.clientX, e.clientY);
+        setTimeout(segue, 650);
+        // A camada já é igual ao fundo de verdade: some sem ninguém notar.
+        setTimeout(() => abertura.classList.add('some'), fim);
         setTimeout(() => {
             abertura.remove();
             document.body.classList.remove('ab-saindo');
-        }, 1200);
+        }, fim + 300);
     };
 
     // ---- Navegação de telas ----
@@ -520,6 +588,53 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     document.getElementById('btn-back-to-players').onclick = () => showScreen('screen-setup-players', 'volta');
 });
+
+// Abertura: põe cada símbolo do fundo exatamente onde o body o
+// desenha (ladrilho de min(100vw, 100dvh·9/16), centralizado, repetido) e
+// agenda o carimbo de cada um pela distância até o dedo. Devolve em quantos
+// ms o último termina.
+const LADRILHO = { largura: 1171, altura: 2106 };   // images/fundo-simbolos.png
+const CARIMBO = { inicio: 150, onda: 480, duracao: 460 };
+function carimbaSimbolos(camada, dedoX, dedoY) {
+    const [folhaL, folhaA] = camada.dataset.folha.split(',').map(Number);
+    const simbolos = camada.dataset.simbolos.split(';').map(t => t.split(',').map(Number));
+    const caixa = document.body.getBoundingClientRect();
+    const largBody = caixa.width || window.innerWidth;
+    const ladL = Math.min(largBody, window.innerHeight * 9 / 16);
+    const esc = ladL / LADRILHO.largura, ladA = LADRILHO.altura * esc;
+    const x0 = caixa.left + (largBody - ladL) / 2, y0 = caixa.top;
+    const larg = window.innerWidth, alt = window.innerHeight;
+    // Toque sem posição (teclado, leitor de tela): a onda sai do meio.
+    if (!(dedoX > 0 || dedoY > 0)) { dedoX = larg / 2; dedoY = alt / 2; }
+
+    const itens = [];
+    for (let col = Math.floor(-x0 / ladL); x0 + col * ladL < larg; col++) {
+        for (let lin = Math.floor(-y0 / ladA) - 1; y0 + lin * ladA < alt; lin++) {
+            for (const [x, y, w, h, ax, ay] of simbolos) {
+                const l = x0 + col * ladL + x * esc, t = y0 + lin * ladA + y * esc;
+                const L = w * esc, A = h * esc;
+                if (l > larg || t > alt || l + L < 0 || t + A < 0) continue;
+                itens.push({ l, t, L, A, ax, ay, d: Math.hypot(l + L / 2 - dedoX, t + A / 2 - dedoY) });
+            }
+        }
+    }
+    const longe = Math.max(1, ...itens.map(i => i.d));
+    const frag = document.createDocumentFragment();
+    for (const i of itens) {
+        const el = document.createElement('div');
+        el.className = 'ab-simbolo';
+        Object.assign(el.style, {
+            left: i.l + 'px', top: i.t + 'px', width: i.L + 'px', height: i.A + 'px',
+            backgroundSize: folhaL * esc + 'px ' + folhaA * esc + 'px',
+            backgroundPosition: -i.ax * esc + 'px ' + -i.ay * esc + 'px'
+        });
+        el.style.setProperty('--atraso', Math.round(CARIMBO.inicio + i.d / longe * CARIMBO.onda) + 'ms');
+        el.style.setProperty('--giro', Math.round(Math.random() * 50 - 25) + 'deg');
+        frag.appendChild(el);
+    }
+    (camada.querySelector('.ab-simbolos') || camada).appendChild(frag);
+    return CARIMBO.inicio + CARIMBO.onda + CARIMBO.duracao;
+}
 
 // Pergunta com a janela do jogo (em vez do confirm() do sistema).
 // Resolve true em "sim" e false em "não" ou num toque fora da caixa.
@@ -981,6 +1096,7 @@ function startBoardTurn() {
     state.players.forEach((p, idx) => {
         const div = document.createElement('div');
         div.className = 'selectable-item';
+        div.setAttribute('role', 'checkbox');
         div.innerText = p.name;
         div.onclick = () => toggleTeamSelection(idx, div, reqSize);
         teamList.appendChild(div);
@@ -1175,6 +1291,7 @@ function startDuelChoosePhase() {
         if (idx !== state.duel.shooterIndex && idx !== state.revolverPreviousOwnerIndex) {
             const div = document.createElement('div');
             div.className = 'selectable-item';
+            div.setAttribute('role', 'radio');
             div.innerText = p.name;
             div.onclick = () => {
                 const prev = targetsList.querySelector('.selected');
@@ -1239,19 +1356,14 @@ function processDuelResult() {
     showScreen('screen-duel-result');
     const sShoot = state.duel.shooterAction;
     const tShoot = state.duel.targetAction;
-    const resP = document.getElementById('duel-result-text');
-    let hasIntimidation = false;
-
-    if (sShoot && tShoot) {
-        resP.innerHTML = t('duel_both_shot');
-        hasIntimidation = true;
-    } else if (!sShoot && !tShoot) {
-        resP.innerHTML = t('duel_both_down');
-        hasIntimidation = true;
-    } else {
-        resP.innerHTML = t('duel_mixed');
-        hasIntimidation = false;
-    }
+    // O resultado é a manchete da tela; a outra frase explica. Quando um
+    // atirou e o outro não, a manchete é a traição.
+    const chave = sShoot && tShoot ? 'duel_both_shot' : (!sShoot && !tShoot ? 'duel_both_down' : 'duel_mixed');
+    const [frase1, frase2 = ''] = t(chave).split('<br>');
+    const traicao = chave === 'duel_mixed';
+    document.getElementById('duel-result-head').textContent = traicao ? frase2 : frase1;
+    document.getElementById('duel-result-text').textContent = traicao ? frase1 : frase2;
+    const hasIntimidation = !traicao;
 
     document.getElementById('btn-duel-result-next').onclick = () => {
         if (hasIntimidation) {
@@ -1301,6 +1413,7 @@ function showBossAssassination() {
         if (idx !== state.bossIndex) {
             const div = document.createElement('div');
             div.className = 'selectable-item';
+            div.setAttribute('role', 'radio');
             div.innerText = p.name;
             div.onclick = () => {
                 const prev = assassinateList.querySelector('.selected');
@@ -1409,10 +1522,12 @@ function refreshExtraCards() {
     ['roles', 'farsante', 'revolver'].forEach(nome => {
         const card = document.getElementById('card-' + nome);
         card.classList.toggle('selected', document.getElementById('chk-' + nome).checked);
+        card.setAttribute('aria-checked', document.getElementById('chk-' + nome).checked);
     });
 
     // O aviso "Requer Distintivo" só faz sentido enquanto o requisito não foi atendido.
     document.getElementById('card-farsante').classList.toggle('disabled-card', !rolesOn);
+    document.getElementById('card-farsante').setAttribute('aria-disabled', !rolesOn);
 }
 
 let tutorialAtual = null;

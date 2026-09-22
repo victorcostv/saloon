@@ -161,27 +161,54 @@ function mesaDireto(grupoId, aoChegarNaMesa) {
 // comparsas, revólver e avisos, o texto não cabia e rolava dentro dela —
 // o último nome podia passar despercebido. Mede numa cópia invisível no
 // tamanho final e encolhe a letra só o necessário, antes de a carta virar.
+// Medir custa caro no celular: a cópia fica numa caixa isolada (o resto da
+// página não é recalculado), o tamanho da letra sai de uma conta direta em
+// vez de tentativa e erro, e cada carta medida fica guardada (a maioria se
+// repete: a Lei comum, o Fora da Lei comum...).
+const _escCarta = new Map();
+let _medidorCarta = null;
 function ajustaCarta(faceEl) {
+    const conteudoReal = faceEl.querySelector('.face-content');
+    conteudoReal.style.removeProperty('--esc');
     const mesa = document.querySelector('#screen-mesa .act-table');
     const largura = mesa ? mesa.clientWidth * 0.8 : 0;   // .card3d.big { width: 80% }
-    faceEl.querySelector('.face-content').style.removeProperty('--esc');
     if (!largura) return;
-    const medida = faceEl.cloneNode(true);
-    medida.removeAttribute('id');
-    Object.assign(medida.style, {
-        position: 'fixed', left: '-10000px', top: '0', right: 'auto', bottom: 'auto',
-        width: largura + 'px', height: (largura * 7 / 5) + 'px',
-        transform: 'none', visibility: 'hidden'
-    });
-    document.body.appendChild(medida);
-    const conteudo = medida.querySelector('.face-content');
-    let esc = 1;
-    while (esc > 0.72 && conteudo.scrollHeight > conteudo.clientHeight + 1) {
-        esc = Math.round((esc - 0.03) * 100) / 100;
-        conteudo.style.setProperty('--esc', esc);
+    const chave = largura + '|' + faceEl.className + '|' + faceEl.innerHTML;
+    let esc = _escCarta.get(chave);
+    if (esc === undefined) {
+        if (!_medidorCarta) {
+            _medidorCarta = document.createElement('div');
+            _medidorCarta.setAttribute('aria-hidden', 'true');
+            Object.assign(_medidorCarta.style, {
+                position: 'fixed', left: '-10000px', top: '0',
+                visibility: 'hidden', contain: 'strict'
+            });
+            document.body.appendChild(_medidorCarta);
+        }
+        Object.assign(_medidorCarta.style, { width: largura + 'px', height: (largura * 7 / 5) + 'px' });
+        const medida = faceEl.cloneNode(true);
+        medida.removeAttribute('id');
+        Object.assign(medida.style, {
+            position: 'absolute', left: '0', top: '0', right: 'auto', bottom: 'auto',
+            width: '100%', height: '100%', transform: 'none'
+        });
+        _medidorCarta.replaceChildren(medida);
+        const conteudo = medida.querySelector('.face-content');
+        const cabe = () => conteudo.scrollHeight <= conteudo.clientHeight + 1;
+        esc = 1;
+        if (!cabe()) {
+            // O texto da carta é todo em "em": encolhe na proporção da letra.
+            esc = Math.max(0.72, Math.floor(conteudo.clientHeight / conteudo.scrollHeight * 100) / 100);
+            conteudo.style.setProperty('--esc', esc);
+            while (esc > 0.72 && !cabe()) {
+                esc = Math.max(0.72, Math.round((esc - 0.03) * 100) / 100);
+                conteudo.style.setProperty('--esc', esc);
+            }
+        }
+        _medidorCarta.replaceChildren();
+        _escCarta.set(chave, esc);
     }
-    medida.remove();
-    if (esc < 1) faceEl.querySelector('.face-content').style.setProperty('--esc', esc);
+    if (esc < 1) conteudoReal.style.setProperty('--esc', esc);
 }
 
 // ── Revelação: a carta descola da mesa, cresce e gira ──
@@ -191,14 +218,28 @@ function runRevealScene(roleData, targetName, onDone, opts = {}) {
     const card  = document.getElementById('reveal-card');
     const inner = document.getElementById('reveal-card-inner');
 
-    buildCardFace(document.getElementById('role-card-display'), roleData);
-    ajustaCarta(document.getElementById('role-card-display'));
     card.classList.remove('big');
     inner.classList.remove('flipped');
+
+    // Montar e medir a carta pesa no celular (travava a entrada da cena).
+    // Ela só aparece quando a câmera desce até a mesa, então é montada
+    // depois que a cena entrou e a câmera parou (sobe em 0,85 s; o botão
+    // "Sou eu" só aparece aos 2 s) — ou na hora, se alguém já chegou.
+    const face = document.getElementById('role-card-display');
+    let pronta = false;
+    const prepara = () => {
+        if (pronta) return;
+        pronta = true;
+        buildCardFace(face, roleData);
+        ajustaCarta(face);
+    };
+    if (opts.direto) prepara();
+    else setTimeout(prepara, mesaEspera(1000));
 
     const chegar = opts.direto ? (fn) => mesaDireto('mesa-carta', fn)
                                : (fn) => abrirMesa(targetName, 'mesa-carta', fn);
     chegar(() => {
+        prepara();
         const bFlip = mesaTrocaBotao('btn-flip-card');
         bFlip.innerText = t('reveal_card');
         mesaMostrar('btn-flip-card');
@@ -300,6 +341,7 @@ function renderChipTable(opts) {
                 return;
             }
             travado = true;
+            warnEl.classList.remove('on');   // escolha feita: o aviso não vale mais
             AudioManager.playSFX('chip');
             // Mesma vibração para as duas fichas: quem está perto não pode
             // sentir/ouvir diferença entre cumprir e sabotar.

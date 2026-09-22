@@ -158,6 +158,7 @@ const I18N = {
         sound_off: 'Som desativado',
         vibration_on: 'Vibração ativada',
         vibration_off: 'Vibração desativada',
+        more_info: 'Saiba mais',
         language: 'Idioma',
         home_screen: 'Tela inicial',
 
@@ -364,6 +365,7 @@ const I18N = {
         sound_off: 'Sound off',
         vibration_on: 'Vibration on',
         vibration_off: 'Vibration off',
+        more_info: 'Learn more',
         language: 'Language',
         home_screen: 'Home screen',
 
@@ -472,6 +474,10 @@ function applyLanguage() {
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+    });
+    // Nome falado pelo leitor de tela (VoiceOver) em botões só com ícone.
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+        el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria')));
     });
 
     // Destaca o idioma ativo no menu
