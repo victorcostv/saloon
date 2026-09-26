@@ -1,34 +1,20 @@
 // ============================================
-// MODO TELA — lógica do telão e dos celulares
-// O dispositivo que cria a sala vira o TELÃO (isScreenDevice = true).
-// Os jogadores entram pelos próprios celulares.
+// MODO PARTY — o telão e o resumo dos celulares
 // ============================================
+// O aparelho que liga o Modo Party vira o TELÃO (isScreenDevice = true):
+// mostra a mesa para todo mundo — nunca nada secreto — e é o juiz do tempo
+// (xerife e votação). Os jogadores entram pelos próprios celulares e seguem
+// a sala pelo online.js; aqui ficam só as telas do telão e o resumo que o
+// celular mostra fora da vez.
 
-// Guarda a carta do jogador (para o botão "Rever minha carta")
-let myRoleData = null;
+// Tempos do Modo Party (ms).
+const TEMPOS = { escolha: 90000, votacao: 60000, resultadoVotacao: 4000, resultadoMissao: 3500 };
 
-// ============================================
-// LIGAR O MODO PARTY (host vira a tela)
-// O host sai da lista de jogadores, a sala vira screenMode, e este
-// dispositivo passa a ser o telão.
-// ============================================
-function enabledPartyAsHost(code) {
-    // remove o host da lista de jogadores e marca a sala como Party
-    const updates = {
-        screenMode: true,
-        [`players/${onlineProfile.name}`]: null
-    };
-    db.ref('rooms/' + code).update(updates).then(() => {
-        // para de escutar como jogador e passa a escutar como tela
-        db.ref('rooms/' + code + '/players').off();
-        db.ref('rooms/' + code + '/status').off();
-        db.ref('rooms/' + code + '/extras').off();
-        db.ref('rooms/' + code + '/screenMode').off();
-        isScreenDevice = true;
-        showScreen('screen-screen-lobby');
-        listenToRoomAsScreen(code);
-    });
-}
+const telaoTopo = (code, meio = '') => `
+    <div class="tela-top">
+        <div class="tela-brand">★ SALOON ★</div>${meio}
+        <div class="tela-code">${t('screen_room')} ${esc(code)}</div>
+    </div>`;
 
 // ---- Composição de papéis da partida (para o resumo do celular e nada secreto) ----
 // Retorna a lista de papéis que existem na mesa, dado nº de jogadores e expansões.
@@ -37,23 +23,21 @@ function composicaoDaMesa(numPlayers, extras) {
     if (!cfg) return [];
     const outlaws = cfg.outlaws;
     const law = numPlayers - outlaws;
+    const roles = !!(extras && extras.roles);
+    const farsante = roles && !!extras.farsante;
     const blocks = [];
 
     // Lado da Lei
-    let lawCommon = law;
-    if (extras && extras.roles) { lawCommon -= 1; }       // Delegado
-    if (extras && extras.farsante) { lawCommon -= 1; }    // Escrivão
+    let lawCommon = law - (roles ? 1 : 0) - (farsante ? 1 : 0);
     for (let i = 0; i < lawCommon; i++) blocks.push('LAW');
-    if (extras && extras.roles) blocks.push('DELEGADO');
-    if (extras && extras.farsante) blocks.push('ESCRIVAO');
+    if (roles) blocks.push('DELEGADO');
+    if (farsante) blocks.push('ESCRIVAO');
 
-    // Lado dos Fora-da-Lei
-    let outCommon = outlaws;
-    if (extras && extras.roles) { outCommon -= 1; }        // Chefe
-    if (extras && extras.farsante) { outCommon -= 1; }     // Falsificador
+    // Lado dos Fora da Lei
+    let outCommon = outlaws - (roles ? 1 : 0) - (farsante ? 1 : 0);
     for (let i = 0; i < outCommon; i++) blocks.push('OUTLAW');
-    if (extras && extras.roles) blocks.push('BOSS');
-    if (extras && extras.farsante) blocks.push('FALSIFICADOR');
+    if (roles) blocks.push('BOSS');
+    if (farsante) blocks.push('FALSIFICADOR');
 
     return blocks;
 }
@@ -92,84 +76,159 @@ function papelDesc(suitKey) {
 function generateRoomQRCode(code) {
     const holder = document.getElementById('screen-qrcode');
     if (!holder || typeof qrcode === 'undefined') return;
-    let base = location.origin + location.pathname;
-    const roomUrl = base + '#' + code;
+    const roomUrl = location.origin + location.pathname + '#' + code;
     try {
         const qr = qrcode(0, 'M');
         qr.addData(roomUrl);
         qr.make();
         holder.innerHTML = qr.createImgTag(8, 8);
         const img = holder.querySelector('img');
-        if (img) { img.style.width = '100%'; img.style.height = '100%'; img.style.display = 'block'; }
+        if (img) { img.style.width = '100%'; img.style.height = '100%'; img.style.display = 'block'; img.alt = roomUrl; }
     } catch (e) {
         holder.innerHTML = '';
     }
 }
 
 // ============================================
-// TELÃO — LOBBY
+// TELÃO — ESCUTAR A SALA
 // ============================================
 function listenToRoomAsScreen(code) {
+    currentRoom = code;
+    isScreenDevice = true;
+    myRoleData = null;
+    guardaSessao();
+    limpaHash();
+    showHamburger();
     document.body.classList.add('is-screen');
     document.getElementById('screen-room-code').innerText = code;
-
-    // Gera o QR code com o link direto da sala
     generateRoomQRCode(code);
 
-    // Jogadores entrando
-    db.ref('rooms/' + code + '/players').on('value', snap => {
-        const players = snap.val() ? Object.values(snap.val()) : [];
-        renderScreenLobbyPlayers(players);
-        const startBtn = document.getElementById('btn-screen-start');
-        const hint = document.getElementById('screen-min-players');
-        if (players.length >= 5) {
-            startBtn.classList.remove('hidden');
-            hint.classList.add('hidden');
-        } else {
-            startBtn.classList.add('hidden');
-            hint.classList.remove('hidden');
-            hint.innerText = t('screen_need_players_count', { count: players.length });
-        }
-    });
-
-    // Expansões (o telão mostra; quem altera são os celulares? Não — no modo tela,
-    // a seleção de expansões fica no telão, controlada por toque nele.)
-    db.ref('rooms/' + code + '/extras').on('value', snap => {
-        const extras = snap.val() || { roles: false, revolver: false, farsante: false };
-        renderScreenLobbyExpansions(code, extras);
-    });
-
-    // Status: quando começar, o telão vai para o tabuleiro
-    db.ref('rooms/' + code + '/status').on('value', snap => {
-        const status = snap.val();
-        routeScreenStatus(code, status);
-    });
-
-    // Botão começar
     document.getElementById('btn-screen-start').onclick = () => {
-        db.ref('rooms/' + code + '/players').once('value').then(s => {
-            const players = s.val() ? Object.values(s.val()) : [];
-            if (players.length < 5) return;
-            startScreenMatch(code, players);
+        avancaSala(code, faseAtual, s => {
+            const n = nomesDe(s).length;
+            if (s.status !== 'waiting' || n < 5 || n > MAX_ONLINE) return false;
+            sorteiaPapeis(s);
         });
     };
-    document.getElementById('btn-screen-leave').onclick = () => {
-        db.ref('rooms/' + code).remove();
-        isScreenDevice = false;
-        location.reload();
+    document.getElementById('btn-screen-leave').onclick = async () => {
+        if (await perguntar({ titulo: t('screen_leave_title'), texto: t('screen_leave_text'),
+                              sim: t('screen_leave_yes'), nao: t('leave_game_no') })) encerraTelao();
     };
+
+    escutaSala(code, sala => {
+        if (!sala || !sala.status) return salaSumiu(t('room_closed'));
+        salaAtual = sala;
+        const fase = chaveDaFase(sala);
+        if (fase !== faseAtual) {
+            const de = faseAtual;
+            faseAtual = fase;
+            vivo = {};
+            limpaRelogios();
+            document.body.classList.remove('suspense-dim');
+            routeScreenStatus(code, sala, de);
+        }
+        telaoAoVivo(code, sala);
+    });
 }
 
+// Encerrar a sala pelo telão: a partida acaba para todos.
+function encerraTelao() {
+    const code = currentRoom;
+    paraDeEscutar();
+    soltaTelaAcesa();
+    if (code) db.ref('rooms/' + code).remove();
+    currentRoom = null;
+    isScreenDevice = false;
+    esqueceSessao();
+    document.body.classList.remove('is-screen', 'bg-winner-law', 'bg-winner-outlaw', 'suspense-dim');
+    showScreen('screen-mode-select', 'volta');
+}
+
+// O telão mostra sempre a informação pública; nunca nada secreto.
+function routeScreenStatus(code, sala, de) {
+    const st = sala.status;
+    if (st === 'waiting')            return showScreen('screen-screen-lobby');
+    if (st === 'revealing')          return renderScreenRevealing(code, sala);
+    if (st === 'board')              return renderScreenBoard(code, sala, de);
+    if (st === 'voting')             return renderScreenVoting(code, sala);
+    if (st === 'mission')            return renderScreenMission(code, sala);
+    if (st === 'missionResult')      return renderScreenMissionResult(code, sala);
+    if (st === 'duel_choose' || st === 'duel_action') return renderScreenDuel(code, sala);
+    if (st === 'duel_result')        return renderScreenDuelResult(code, sala);
+    if (st === 'boss_assassination') return renderScreenBossAssassination(code, sala);
+    if (fimDeJogo(st))               return renderScreenGameOver(code, sala);
+}
+
+// O que muda dentro da fase: quem entrou, quem está pronto, quem votou...
+function telaoAoVivo(code, sala) {
+    const st = sala.status, fase = faseAtual;
+    const nomes = nomesDe(sala);
+    const tenta = (tipo, muda) => {
+        if (vivo[tipo]) return;
+        vivo[tipo] = true;
+        avancaSala(code, fase, muda);
+    };
+    const texto = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+
+    if (st === 'waiting') {
+        renderScreenLobbyPlayers(jogadoresDe(sala));
+        renderScreenLobbyExpansions(code, sala.extras || {});
+        const pode = nomes.length >= 5 && nomes.length <= MAX_ONLINE;
+        document.getElementById('btn-screen-start').classList.toggle('hidden', !pode);
+        const hint = document.getElementById('screen-min-players');
+        hint.classList.toggle('hidden', pode);
+        hint.innerText = t('screen_need_players_count', { count: nomes.length });
+        return;
+    }
+
+    if (st === 'revealing') {
+        const faltam = nomes.filter(n => !(sala.ready && sala.ready[n]));
+        texto('dealing-ready-count', t('screen_ready_count', { ready: nomes.length - faltam.length, total: nomes.length }));
+        texto('dealing-faltam', faltam.length ? t('waiting_for', { names: faltam.join(', ') }) : '');
+        if (!faltam.length) tenta('tabuleiro', irAoTabuleiro);
+        return;
+    }
+
+    if (st === 'voting') {
+        if (vivo.resolvida) return;
+        const votos = sala.votes || {};
+        const faltam = nomes.filter(n => !votos[n]);
+        const votaram = nomes.length - faltam.length;
+        texto('screen-votes-label', `${votaram} ${t('screen_of')} ${nomes.length} ${t('screen_voted')}`);
+        texto('screen-votes-faltam', faltam.length ? t('waiting_for', { names: faltam.join(', ') }) : '');
+        document.querySelectorAll('#screen-vote-dots .vote-dot').forEach((d, i) => d.classList.toggle('done', i < votaram));
+        if (!faltam.length) resolveVotacaoTelao(code, sala, false);
+        return;
+    }
+
+    if (st === 'mission') {
+        const escolhas = sala.missionChoices || {};
+        const equipe = lista(sala.proposedTeam);
+        const decididos = equipe.filter(n => escolhas[n]);
+        texto('screen-mission-status', `${decididos.length} ${t('screen_of')} ${equipe.length} ${t('screen_agents_decided')}`);
+        document.querySelectorAll('.screen-agent').forEach(el => {
+            if (!decididos.includes(el.dataset.name) || el.classList.contains('decided')) return;
+            el.classList.add('decided');
+            const badge = el.querySelector('.ag-badge');
+            if (badge) { badge.classList.remove('ag-think'); badge.classList.add('ag-check'); badge.textContent = '✓'; }
+        });
+        if (equipe.length && decididos.length === equipe.length) tenta('missao', fechaMissao);
+        return;
+    }
+
+    if (st === 'duel_action') {
+        const d = sala.duel;
+        if (d && d.shooterAction && d.targetAction) tenta('duelo', fechaDuelo);
+    }
+}
+
+// ============================================
+// TELÃO — LOBBY
+// ============================================
 function renderScreenLobbyPlayers(players) {
-    const cont = document.getElementById('screen-lobby-players');
-    cont.innerHTML = '';
-    players.forEach(p => {
-        const av = p.avatar || 'avatars/avatar1.png';
-        const div = document.createElement('div');
-        div.className = 'tela-lobby-player';
-        div.innerHTML = `<div class="tlp-av"><img src="${av}"></div><span>${p.name}</span>`;
-        cont.appendChild(div);
-    });
+    document.getElementById('screen-lobby-players').innerHTML = players.map(p =>
+        `<div class="tela-lobby-player"><div class="tlp-av"><img src="${esc(p.avatar || AVATARES[0])}" alt=""></div><span>${esc(p.name)}</span></div>`
+    ).join('');
 }
 
 function renderScreenLobbyExpansions(code, extras) {
@@ -186,54 +245,40 @@ function renderScreenLobbyExpansions(code, extras) {
         div.className = 'tela-exp-card' + (on ? ' on' : '') + (d.req && !extras.roles ? ' disabled' : '');
         div.innerHTML = `
             <div class="tec-check">${on ? '✓' : ''}</div>
-            <img src="${d.img}" class="tec-icon">
+            <img src="${d.img}" class="tec-icon" alt="">
             <div class="tec-text"><span class="tec-title">${d.title}</span><span class="tec-sub">${d.sub}</span>
             ${d.req ? `<span class="tec-req">${t('farsante_req')}</span>` : ''}</div>`;
-        div.onclick = () => toggleScreenExpansion(code, d.key, extras);
+        div.onclick = () => toggleScreenExpansion(code, d.key);
         cont.appendChild(div);
     });
 }
 
-function toggleScreenExpansion(code, key, extras) {
-    if (key === 'farsante' && !extras.roles) {
-        // pisca o card do distintivo
-        const cards = document.querySelectorAll('.tela-exp-card');
-        if (cards[0]) { cards[0].classList.add('shake-req'); setTimeout(() => cards[0].classList.remove('shake-req'), 500); }
+function toggleScreenExpansion(code, key) {
+    const ex = (salaAtual && salaAtual.extras) || {};
+    if (key === 'farsante' && !ex.roles) {
+        // Sem Distintivo, a Farsante não liga: pisca o cartão do Distintivo.
+        const dist = document.querySelector('.tela-exp-card');
+        if (dist) { dist.classList.add('shake-req'); setTimeout(() => dist.classList.remove('shake-req'), 500); }
         return;
     }
-    const updates = {};
-    updates[key] = !extras[key];
-    // desligar Distintivo desliga Farsante
-    if (key === 'roles' && extras[key]) updates.farsante = false;
-    db.ref('rooms/' + code + '/extras').update(updates);
+    avancaSala(code, null, s => {
+        if (s.status !== 'waiting') return false;
+        s.extras = Object.assign({ roles: false, revolver: false, farsante: false }, s.extras);
+        if (key === 'farsante' && !s.extras.roles) return false;
+        s.extras[key] = !s.extras[key];
+        if (key === 'roles' && !s.extras.roles) s.extras.farsante = false;
+    });
 }
 
 // ============================================
 // CELULAR — RESUMO (fora da vez)
 // ============================================
 function showPhoneSummary(code) {
-    db.ref('rooms/' + code).once('value').then(snap => {
-        const room = snap.val();
-        if (!room) return;
-        const players = room.players ? Object.values(room.players) : [];
-        const blocks = composicaoDaMesa(players.length, room.extras || {});
-        renderPhoneRoles(blocks);
-        // botão de rever a própria carta
-        const reviewBtn = document.getElementById('btn-phone-review-card');
-        if (reviewBtn) {
-            reviewBtn.onclick = () => { reviewMyCard(code); };
-        }
-        showScreen('screen-phone-summary');
-    });
-}
-
-// Reabre a carta do jogador (modo tela), com botão de voltar ao resumo.
-// Não mexe nos listeners de status — é só visual.
-function reviewMyCard(code) {
-    if (!myRoleData) { showPhoneSummary(code); return; }
-    showScreen('screen-mesa');
-    runRevealScene(myRoleData, onlineProfile.name, () => showPhoneSummary(code),
-        { direto: true, rotuloFim: t('phone_back_summary') });
+    const sala = salaAtual;
+    if (!sala) return;
+    renderPhoneRoles(composicaoDaMesa(nomesDe(sala).length, sala.extras || {}));
+    document.getElementById('btn-phone-review-card').onclick = () => mostrarMinhaCarta(code, false);
+    showScreen('screen-phone-summary');
 }
 
 function renderPhoneRoles(blocks) {
@@ -246,10 +291,8 @@ function renderPhoneRoles(blocks) {
         div.innerHTML = `
             <div class="rb-suit">${suitSVG(suitKey)}</div>
             <span class="rb-name">${info.name}</span>
-            <button class="rb-info">i</button>`;
-        div.querySelector('.rb-info').onclick = () => {
-            openPhoneRoleModal(info.name, papelDesc(suitKey));
-        };
+            <button type="button" class="rb-info" aria-label="${t('more_info')}">i</button>`;
+        div.querySelector('.rb-info').onclick = () => openPhoneRoleModal(info.name, papelDesc(suitKey));
         grid.appendChild(div);
     });
 }
@@ -261,126 +304,26 @@ function openPhoneRoleModal(title, desc) {
         modal.id = 'phone-role-modal';
         modal.className = 'phone-modal';
         modal.innerHTML = `<div class="phone-modal-box"><h3></h3><p></p>
-            <button class="phone-modal-close"></button></div>`;
+            <button type="button" class="phone-modal-close"></button></div>`;
         document.body.appendChild(modal);
-        modal.querySelector('.phone-modal-close').innerText = t('understood');
         modal.querySelector('.phone-modal-close').onclick = () => modal.classList.remove('show');
+        modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('show'); };
     }
+    modal.querySelector('.phone-modal-close').innerText = t('understood');
     modal.querySelector('h3').innerText = title;
     modal.querySelector('p').innerText = desc;
     modal.classList.add('show');
 }
 
 // ============================================
-// TELÃO — INICIAR A PARTIDA (distribui papéis)
+// TELÃO — CARTAS SENDO VISTAS
 // ============================================
-function startScreenMatch(code, players) {
-    const count  = players.length;
-    const roomRef = db.ref('rooms/' + code);
-    roomRef.once('value').then(snap => {
-        const room   = snap.val();
-        const config = GAME_CONFIG[count];
-        const extras = room.extras || { roles: false, revolver: false, farsante: false };
-
-        let roles = [];
-        for (let i = 0; i < config.outlaws; i++) roles.push('OUTLAW');
-        for (let i = 0; i < count - config.outlaws; i++) roles.push('LAW');
-        roles = shuffle(roles);
-
-        const updates = {};
-        players.forEach((p, i) => {
-            updates[`players/${p.name}/role`]           = roles[i];
-            updates[`players/${p.name}/isBoss`]         = false;
-            updates[`players/${p.name}/isDelegado`]     = false;
-            updates[`players/${p.name}/isEscrivao`]     = false;
-            updates[`players/${p.name}/isFalsificador`] = false;
-        });
-
-        const farsanteOn = !!extras.farsante && !!extras.roles;
-        if (extras.roles) {
-            const outlawIdxs  = players.map((p, i) => roles[i] === 'OUTLAW' ? i : -1).filter(i => i !== -1);
-            const lawIdxs     = players.map((p, i) => roles[i] === 'LAW'    ? i : -1).filter(i => i !== -1);
-            const bossIdx     = outlawIdxs[Math.floor(Math.random() * outlawIdxs.length)];
-            const delegadoIdx = lawIdxs[Math.floor(Math.random() * lawIdxs.length)];
-            const commonOuts  = outlawIdxs.filter(i => i !== bossIdx);
-            let delegadoTargetIdx = commonOuts[Math.floor(Math.random() * commonOuts.length)];
-            updates[`players/${players[bossIdx].name}/isBoss`]         = true;
-            updates[`players/${players[delegadoIdx].name}/isDelegado`] = true;
-            updates['delegadoName'] = players[delegadoIdx].name;
-            if (farsanteOn) {
-                const falsIdx = commonOuts[Math.floor(Math.random() * commonOuts.length)];
-                updates[`players/${players[falsIdx].name}/isFalsificador`] = true;
-                updates['falsificadorName'] = players[falsIdx].name;
-                const escrCands = lawIdxs.filter(i => i !== delegadoIdx);
-                const escrIdx = escrCands[Math.floor(Math.random() * escrCands.length)];
-                updates[`players/${players[escrIdx].name}/isEscrivao`] = true;
-                updates['escrivaoName'] = players[escrIdx].name;
-                const visiveis = commonOuts.filter(i => i !== falsIdx);
-                delegadoTargetIdx = visiveis.length > 0 ? visiveis[Math.floor(Math.random() * visiveis.length)] : bossIdx;
-                updates['escrivaoNames'] = shuffle([players[delegadoIdx].name, players[falsIdx].name]);
-            }
-            updates['delegadoTargetName'] = players[delegadoTargetIdx].name;
-        }
-        if (extras.revolver) {
-            updates['revolverOwnerName'] = players[Math.floor(Math.random() * count)].name;
-            updates['revolverPreviousOwnerName'] = null;
-        }
-        const sheriffIdx = Math.floor(Math.random() * count);
-        updates['currentSheriffName']  = players[sheriffIdx].name;
-        updates['currentSheriffIndex'] = sheriffIdx;
-        updates['currentMissionIndex'] = 0;
-        updates['rejectedTeams']       = 0;
-        updates['missionResults']      = {};
-        updates['extras']              = extras;
-        updates['status']              = 'revealing';
-        roomRef.update(updates);
-    });
-}
-
-// ============================================
-// TELÃO — ROTEADOR DE STATUS
-// O telão mostra sempre a informação pública; nunca nada secreto.
-// ============================================
-function routeScreenStatus(code, status) {
-    if (!isScreenDevice) return;
-    if (!status || status === 'waiting') return; // ainda no lobby
-
-    db.ref('rooms/' + code).once('value').then(snap => {
-        const room = snap.val();
-        if (!room) return;
-        if (status === 'revealing') {
-            // Enquanto os jogadores veem suas cartas, o telão mostra "distribuindo"
-            renderScreenRevealing(room);
-        } else if (status === 'board') {
-            renderScreenBoard(code, room);
-        } else if (status === 'voting') {
-            renderScreenVoting(code, room);
-        } else if (status === 'mission') {
-            renderScreenMission(code, room);
-        } else if (status === 'missionResult') {
-            renderScreenMissionResult(code, room);
-        } else if (status === 'duel_choose' || status === 'duel_action') {
-            renderScreenDuel(code, room);
-        } else if (status === 'duel_result') {
-            renderScreenDuelResult(code, room);
-        } else if (status && status.indexOf('gameover') === 0) {
-            renderScreenGameOver(code, room, status);
-        } else if (status === 'boss_assassination') {
-            renderScreenBossAssassination(code, room);
-        }
-    });
-}
-
-// Telão enquanto os jogadores veem suas cartas
-function renderScreenRevealing(room) {
+function renderScreenRevealing(code, sala) {
     const content = document.getElementById('screen-board-content');
     showScreen('screen-screen-board');
 
-    // calcula a composição da mesa e separa por time
-    const players = room.players ? Object.values(room.players) : [];
-    const blocks = composicaoDaMesa(players.length, room.extras || {});
-
-    // agrupa por papel mantendo a ordem e contando as quantidades
+    // composição da mesa, separada por time (quantos de cada papel)
+    const blocks = composicaoDaMesa(nomesDe(sala).length, sala.extras || {});
     const order = ['LAW', 'DELEGADO', 'ESCRIVAO', 'OUTLAW', 'BOSS', 'FALSIFICADOR'];
     const counts = {};
     blocks.forEach(k => { counts[k] = (counts[k] || 0) + 1; });
@@ -395,15 +338,11 @@ function renderScreenRevealing(room) {
             <span class="comp-name" style="color:${cor}">${info.name}</span>
         </div>`;
     }
-
     const lawRows = order.filter(k => papelInfo(k).team === 'law').map(compRow).join('');
     const outRows = order.filter(k => papelInfo(k).team === 'outlaw').map(compRow).join('');
 
     content.innerHTML = `
-        <div class="tela-top">
-            <div class="tela-brand">★ SALOON ★</div>
-            <div class="tela-code">SALA ${currentRoom}</div>
-        </div>
+        ${telaoTopo(code)}
         <div class="screen-dealing-center">
             <h1 class="tela-h1">${t('screen_dealing_title')}</h1>
             <p class="tela-sub">${t('screen_dealing_sub')}</p>
@@ -420,80 +359,46 @@ function renderScreenRevealing(room) {
                 </div>
             </div>
             <div class="dealing-ready-count" id="dealing-ready-count"></div>
+            <p class="tela-faltam" id="dealing-faltam"></p>
         </div>`;
-
-    // O TELÃO é o juiz: monitora as confirmações de carta e, quando todos
-    // estiverem prontos, avança para o tabuleiro (board).
-    const totalPlayers = players.length;
-    const code = currentRoom;
-    db.ref('rooms/' + code + '/ready').off();
-    db.ref('rooms/' + code + '/ready').on('value', readySnap => {
-        const readyCount = readySnap.val() ? Object.keys(readySnap.val()).length : 0;
-        const el = document.getElementById('dealing-ready-count');
-        if (el) el.innerText = t('screen_ready_count', { ready: readyCount, total: totalPlayers });
-        if (totalPlayers > 0 && readyCount >= totalPlayers) {
-            db.ref('rooms/' + code + '/ready').off();
-            db.ref('rooms/' + code + '/ready').remove();
-            db.ref('rooms/' + code + '/status').set('board');
-        }
-    });
 }
 
-// Cabeçalho + miniatura da trilha (reusado em várias telas do telão)
-function screenHeaderWithTrack(room, label) {
-    const cfg = GAME_CONFIG[Object.keys(room.players).length];
-    const trackHolder = document.createElement('div');
-    buildMissionTrack(
-        trackHolder,
-        cfg.missions,
-        room.missionResults || {},
-        room.currentMissionIndex || 0,
-        cfg.twoFailsRequired === undefined ? -1 : cfg.twoFailsRequired,
-        -1
-    );
-    return `
-        <div class="tela-top">
-            <div class="tela-brand">★ SALOON ★</div>
-            <div class="tela-code">SALA ${currentRoom}</div>
-        </div>
-        <div class="mini-board"><span class="mb-label">${label || t('screen_track')}</span>
-            <div class="mini-track">${trackHolder.innerHTML}</div></div>`;
+// Miniatura da trilha, parada (reusada em várias telas do telão)
+function miniTrilha(sala) {
+    const cfg = GAME_CONFIG[nomesDe(sala).length];
+    const holder = document.createElement('div');
+    buildMissionTrack(holder, cfg.missions, sala.missionResults || {}, sala.currentMissionIndex || 0,
+        cfg.twoFailsRequired === undefined ? -1 : cfg.twoFailsRequired, -1);
+    return holder.innerHTML;
 }
 
-// Telão: tabuleiro principal (entre as fases)
-const PICK_DURATION_MS = 90000; // 1min30 para o xerife montar a equipe
-function renderScreenBoard(code, room) {
+// ============================================
+// TELÃO — TABULEIRO (o xerife monta a equipe; o tempo corre)
+// ============================================
+function renderScreenBoard(code, sala, de) {
     const content = document.getElementById('screen-board-content');
     showScreen('screen-screen-board');
-    const cfg = GAME_CONFIG[Object.keys(room.players).length];
-    const missionIdx = room.currentMissionIndex || 0;
+    const cfg = GAME_CONFIG[nomesDe(sala).length];
+    const missionIdx = sala.currentMissionIndex || 0;
     const missionSize = cfg.missions[missionIdx];
-
-    // trilha grande
-    const trackHolder = document.createElement('div');
-    buildMissionTrack(trackHolder, cfg.missions, room.missionResults || {}, missionIdx,
-        cfg.twoFailsRequired === undefined ? -1 : cfg.twoFailsRequired, -1);
-
-    const rejected = room.rejectedTeams || 0;
-    let rdots = '';
-    for (let i = 0; i < 5; i++) {
-        rdots += `<div class="rdot" style="background:${i < rejected ? 'var(--outlaw)' : '#e8d5c0'}"></div>`;
-    }
+    const xerife = esc(sala.currentSheriffName || '');
+    const rejected = sala.rejectedTeams || 0;
+    const rdots = [0, 1, 2, 3, 4].map(i =>
+        `<div class="rdot" style="background:${i < rejected ? 'var(--outlaw)' : '#e8d5c0'}"></div>`).join('');
+    // Mesmo status de antes: a vez passou porque o tempo do xerife acabou.
+    const passou = de && de.split('|')[0] === 'board';
 
     content.innerHTML = `
-        <div class="tela-top">
-            <div class="tela-brand">★ SALOON ★</div>
-            <div class="screen-board-timer" id="screen-pick-timer">1:30</div>
-            <div class="tela-code">SALA ${code}</div>
-        </div>
+        ${telaoTopo(code, '<div class="screen-board-timer" id="screen-pick-timer">' + mmss(TEMPOS.escolha) + '</div>')}
         <div class="screen-mission-info">
             <div class="smi-label">${t('screen_mission_label')} ${missionIdx + 1}</div>
-            <div class="smi-lore">${t('screen_sheriff_picks', { name: room.currentSheriffName || '', size: missionSize })}</div>
+            ${passou ? `<div class="smi-aviso">${t('screen_pick_timeout')}</div>` : ''}
+            <div class="smi-lore">${t('screen_sheriff_picks', { name: xerife, size: missionSize })}</div>
         </div>
         <div class="screen-board-grid">
             <div class="screen-card">
                 <div class="screen-card-title">${t('screen_track')}</div>
-                <div class="screen-track">${trackHolder.innerHTML}</div>
+                <div class="screen-track">${miniTrilha(sala)}</div>
             </div>
             <div class="screen-bottom-row">
                 <div class="screen-card screen-rejects">
@@ -503,120 +408,61 @@ function renderScreenBoard(code, room) {
                 </div>
                 <div class="screen-card screen-sheriff">
                     <span class="screen-star">⭐</span>
-                    <span class="screen-sheriff-txt">${t('screen_sheriff_label')}: <b>${room.currentSheriffName || ''}</b></span>
+                    <span class="screen-sheriff-txt">${t('screen_sheriff_label')}: <b>${xerife}</b></span>
                 </div>
             </div>
         </div>`;
 
-    // Cronômetro da fase do Xerife (o telão é o juiz: ao zerar, passa a vez)
-    db.ref('rooms/' + code + '/pickEndTime').once('value').then(snap => {
-        let endTime = snap.val();
-        if (!endTime) {
-            endTime = Date.now() + PICK_DURATION_MS;
-            db.ref('rooms/' + code + '/pickEndTime').set(endTime);
-        }
-        startPickTimer(code, endTime);
-    });
-}
-
-// Cronômetro pequeno da fase do Xerife; ao zerar, passa a vez (conta rejeição).
-function startPickTimer(code, endTime) {
-    const txt = document.getElementById('screen-pick-timer');
-    if (window._pickTimerRAF) cancelAnimationFrame(window._pickTimerRAF);
-    if (window._pickTimerInterval) clearInterval(window._pickTimerInterval);
-
-    function paint() {
-        const remaining = Math.max(0, endTime - Date.now());
-        const secs = Math.ceil(remaining / 1000);
-        const m = Math.floor(secs / 60);
-        const s = secs % 60;
-        const el = document.getElementById('screen-pick-timer');
-        if (el) el.innerText = `${m}:${s.toString().padStart(2, '0')}`;
-        if (remaining > 0) window._pickTimerRAF = requestAnimationFrame(paint);
+    // O telão é o juiz do tempo: ao zerar, a vez passa (conta como rejeição).
+    let fim = sala.pickEndTime;
+    if (!fim) {
+        fim = Date.now() + TEMPOS.escolha;
+        db.ref('rooms/' + code + '/pickEndTime').set(fim);
     }
-    paint();
-
-    // monitora o tempo: ao zerar, passa a vez
-    window._pickTimerInterval = setInterval(() => {
-        // se já saiu do board (status mudou), para o timer
-        if (Date.now() >= endTime) {
-            clearInterval(window._pickTimerInterval);
-            window._pickTimerInterval = null;
-            db.ref('rooms/' + code).once('value').then(snap => {
-                const room = snap.val();
-                if (!room || room.status !== 'board') return; // já avançou
-                const names = Object.keys(room.players);
-                const curIdx = room.currentSheriffIndex || 0;
-                const nextIdx = (curIdx + 1) % names.length;
-                const newRejected = (room.rejectedTeams || 0) + 1;
-                db.ref('rooms/' + code).update({
-                    currentSheriffName: names[nextIdx],
-                    currentSheriffIndex: nextIdx,
-                    rejectedTeams: newRejected,
-                    proposedTeam: null,
-                    pickEndTime: null,
-                    status: newRejected >= 5 ? 'gameover_outlaw' : 'board'
-                });
-            });
-        }
-    }, 300);
+    const fase = faseAtual;
+    const pinta = () => {
+        // O prazo que vale é o da sala (o mesmo que o celular do xerife mostra).
+        const prazo = (salaAtual && salaAtual.pickEndTime) || fim;
+        const resta = prazo - Date.now();
+        const el = document.getElementById('screen-pick-timer');
+        if (el) el.textContent = mmss(resta);
+        if (resta > 0 || vivo.esgotou) return;
+        vivo.esgotou = true;
+        avancaSala(code, fase, s => {
+            if (s.status !== 'board' || s.pickEndTime !== prazo) return false;
+            s.rejectedTeams = (s.rejectedTeams || 0) + 1;
+            delete s.proposedTeam;
+            delete s.pickEndTime;
+            proximoXerife(s);
+            s.status = s.rejectedTeams >= 5 ? 'gameover_outlaw' : 'board';
+        });
+    };
+    pinta();
+    repete(pinta, 250);
 }
 
 // ============================================
-// TELÃO — VOTAÇÃO (cronômetro de 1 min, auto-aprova ao zerar)
-// O telão é o "juiz": conta votos e resolve.
+// TELÃO — VOTAÇÃO (1 min; ao zerar, a equipe é aprovada)
+// O telão é o juiz: conta os votos e resolve.
 // ============================================
-const VOTE_DURATION_MS = 60000;
-
-let _screenVotingShown = false;
-function renderScreenVoting(code, room) {
-    // Se a votação já foi resolvida (mostrando resultado), não re-renderiza por cima.
-    if (_screenVoteResolved) return;
-    // Renderiza a UI da votação uma vez só (evita múltiplos listeners/timers).
-    if (_screenVotingShown) return;
-    _screenVotingShown = true;
+function renderScreenVoting(code, sala) {
     showScreen('screen-screen-board');
     const content = document.getElementById('screen-board-content');
-    const players = Object.values(room.players);
-    const playerCount = players.length;
-    const team = room.proposedTeam || [];
-
-    // O telão define o tempo de término da votação (uma vez)
-    db.ref('rooms/' + code + '/voteEndTime').once('value').then(snap => {
-        let endTime = snap.val();
-        if (!endTime) {
-            endTime = Date.now() + VOTE_DURATION_MS;
-            db.ref('rooms/' + code + '/voteEndTime').set(endTime);
-        }
-        startScreenVoteUI(code, room, team, players, playerCount, endTime);
-    });
-}
-
-function startScreenVoteUI(code, room, team, players, playerCount, endTime) {
-    const content = document.getElementById('screen-board-content');
-    const cfg = GAME_CONFIG[playerCount];
-    const missionIdx = room.currentMissionIndex || 0;
-
-    // miniatura da trilha
-    const trackHolder = document.createElement('div');
-    buildMissionTrack(trackHolder, cfg.missions, room.missionResults || {}, missionIdx,
-        cfg.twoFailsRequired === undefined ? -1 : cfg.twoFailsRequired, -1);
-
-    // equipe proposta com avatares
+    const players = jogadoresDe(sala);
     const byName = {};
-    players.forEach(p => byName[p.name] = p);
+    players.forEach(p => { byName[p.name] = p; });
+    const team = lista(sala.proposedTeam);
+    const missionIdx = sala.currentMissionIndex || 0;
+
     const teamHtml = team.map(name => {
-        const av = (byName[name] && byName[name].avatar) || 'avatars/avatar1.png';
-        return `<div class="prop-member"><div class="pm-av"><img src="${av}"></div><span class="pm-name">${name}</span></div>`;
+        const av = (byName[name] && byName[name].avatar) || AVATARES[0];
+        return `<div class="prop-member"><div class="pm-av"><img src="${esc(av)}" alt=""></div><span class="pm-name">${esc(name)}</span></div>`;
     }).join('');
 
     content.innerHTML = `
-        <div class="tela-top">
-            <div class="tela-brand">★ SALOON ★</div>
-            <div class="tela-code">SALA ${code}</div>
-        </div>
+        ${telaoTopo(code)}
         <div class="mini-board"><span class="mb-label">${t('screen_track')}</span>
-            <div class="mini-track">${trackHolder.innerHTML}</div></div>
+            <div class="mini-track">${miniTrilha(sala)}</div></div>
         <h1 class="tela-h1">${t('screen_vote_title')}</h1>
         <p class="tela-sub">${t('screen_vote_sub', { num: missionIdx + 1 })}</p>
         <div class="screen-vote-center">
@@ -630,94 +476,64 @@ function startScreenVoteUI(code, room, team, players, playerCount, endTime) {
                         <circle cx="50" cy="50" r="44" fill="#fff" stroke="#e8d5c0" stroke-width="8"/>
                         <circle id="screen-timer-arc" cx="50" cy="50" r="44" fill="none" stroke="#881337"
                             stroke-width="8" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"
-                            transform="rotate(-90 50 50)"/>
+                            transform="rotate(-90 50 50)" style="transition: stroke-dashoffset .25s linear"/>
                     </svg>
-                    <div class="time-text" id="screen-timer-text">1:00</div>
+                    <div class="time-text" id="screen-timer-text">${mmss(TEMPOS.votacao)}</div>
                 </div>
-                <div class="votes-label" id="screen-votes-label">0 ${t('screen_of')} ${playerCount} ${t('screen_voted')}</div>
-                <div class="vote-dots" id="screen-vote-dots"></div>
+                <div class="votes-label" id="screen-votes-label">0 ${t('screen_of')} ${players.length} ${t('screen_voted')}</div>
+                <div class="vote-dots" id="screen-vote-dots">${players.map(() => '<div class="vote-dot"></div>').join('')}</div>
+                <p class="tela-faltam" id="screen-votes-faltam"></p>
             </div>
         </div>`;
 
-    // pontos de voto
-    const dotsEl = document.getElementById('screen-vote-dots');
-    for (let i = 0; i < playerCount; i++) {
-        const d = document.createElement('div');
-        d.className = 'vote-dot';
-        dotsEl.appendChild(d);
+    // O telão marca o fim da votação (uma vez; sobrevive a uma recarga).
+    let fim = sala.voteEndTime;
+    if (!fim) {
+        fim = Date.now() + TEMPOS.votacao;
+        db.ref('rooms/' + code + '/voteEndTime').set(fim);
     }
-
-    // cronômetro visual
-    startScreenTimer(endTime, VOTE_DURATION_MS);
-
-    // monitora votos em tempo real
-    db.ref('rooms/' + code + '/votes').off();
-    db.ref('rooms/' + code + '/votes').on('value', votesSnap => {
-        const votes = votesSnap.val() || {};
-        const count = Object.keys(votes).length;
-        const label = document.getElementById('screen-votes-label');
-        if (label) label.innerText = `${count} ${t('screen_of')} ${playerCount} ${t('screen_voted')}`;
-        const dots = document.querySelectorAll('#screen-vote-dots .vote-dot');
-        dots.forEach((d, i) => { if (i < count) d.classList.add('done'); });
-
-        if (count >= playerCount) {
-            resolveScreenVote(code, votes, team, playerCount);
-        }
-    });
-
-    // monitora o tempo: ao zerar, auto-aprova
-    if (screenTimerInterval) clearInterval(screenTimerInterval);
-    screenTimerInterval = setInterval(() => {
-        if (Date.now() >= endTime) {
-            clearInterval(screenTimerInterval);
-            screenTimerInterval = null;
-            // auto-aprova: preenche votos faltantes com "yes"
-            db.ref('rooms/' + code + '/votes').once('value').then(vs => {
-                const votes = vs.val() || {};
-                resolveScreenVote(code, votes, team, playerCount, true);
-            });
-        }
-    }, 250);
+    const pinta = () => {
+        if (vivo.resolvida) return;
+        const prazo = (salaAtual && salaAtual.voteEndTime) || fim;
+        const resta = Math.max(0, prazo - Date.now());
+        const arc = document.getElementById('screen-timer-arc');
+        const txt = document.getElementById('screen-timer-text');
+        if (arc) arc.style.strokeDashoffset = (276.5 * (1 - resta / TEMPOS.votacao)).toFixed(1);
+        if (txt) txt.textContent = mmss(resta);
+        if (resta <= 0) resolveVotacaoTelao(code, salaAtual, true);
+    };
+    pinta();
+    repete(pinta, 250);
 }
 
-// Resolve a votação (chamada quando todos votam OU o tempo zera).
-// Guard para rodar só uma vez.
-let _screenVoteResolved = false;
-function resolveScreenVote(code, votes, team, playerCount, timedOut) {
-    if (_screenVoteResolved) return;
-    _screenVoteResolved = true;
-    db.ref('rooms/' + code + '/votes').off();
-    if (screenTimerInterval) { clearInterval(screenTimerInterval); screenTimerInterval = null; }
-
-    const yesVotes = Object.values(votes).filter(v => v === 'yes').length;
-    const majority = Math.floor(playerCount / 2) + 1;
-    // se o tempo zerou, a equipe é aprovada automaticamente
-    const approved = timedOut ? true : (yesVotes >= majority);
-
-    // Mostra o resultado da votação no telão por 4 segundos, depois segue.
-    renderScreenVoteResult(code, votes, approved, team, playerCount, timedOut);
+// Resolve a votação (todos votaram ou o tempo acabou), uma vez por fase:
+// mostra o resultado por alguns segundos e segue.
+function resolveVotacaoTelao(code, sala, esgotou) {
+    if (vivo.resolvida || !sala) return;
+    vivo.resolvida = true;
+    const fase = faseAtual;
+    renderScreenVoteResult(code, sala, esgotou);
+    agenda(() => avancaSala(code, fase, s => aplicaVotacao(s, esgotou)), TEMPOS.resultadoVotacao);
 }
 
-// Telão: tela de resultado da votação (4s), depois avança automaticamente.
-function renderScreenVoteResult(code, votes, approved, team, playerCount, timedOut) {
-    _screenVotingShown = false; // libera para a próxima votação
+function renderScreenVoteResult(code, sala, esgotou) {
     const content = document.getElementById('screen-board-content');
-    const yesNames = Object.entries(votes).filter(([k, v]) => v === 'yes').map(([k]) => k);
-    const noNames  = Object.entries(votes).filter(([k, v]) => v === 'no').map(([k]) => k);
+    const nomes = nomesDe(sala);
+    const votos = sala.votes || {};
+    const yesNames = nomes.filter(n => votos[n] === 'yes');
+    const noNames  = nomes.filter(n => votos[n] === 'no');
+    const approved = esgotou || yesNames.length >= Math.floor(nomes.length / 2) + 1;
 
     const outcomeTxt = approved ? t('approved_team') : t('rejected_team');
     const outcomeColor = approved ? 'var(--law)' : 'var(--outlaw)';
-    const yesHtml = yesNames.map(n => `<span class="vr-chip yes">${n}</span>`).join('') || '<span class="vr-none">—</span>';
-    const noHtml  = noNames.map(n => `<span class="vr-chip no">${n}</span>`).join('') || '<span class="vr-none">—</span>';
+    const yesHtml = yesNames.map(n => `<span class="vr-chip yes">${esc(n)}</span>`).join('') || '<span class="vr-none">—</span>';
+    const noHtml  = noNames.map(n => `<span class="vr-chip no">${esc(n)}</span>`).join('') || '<span class="vr-none">—</span>';
 
     content.innerHTML = `
-        <div class="tela-top">
-            <div class="tela-brand">★ SALOON ★</div>
-            <div class="tela-code">SALA ${code}</div>
-        </div>
+        ${telaoTopo(code)}
         <div class="screen-vr-center">
             <h1 class="screen-vr-title" style="color:${outcomeColor}">${outcomeTxt}</h1>
-            ${timedOut ? `<p class="tela-sub" style="color:#fff">${t('screen_vote_timeout')}</p>` : ''}
+            ${esgotou ? `<p class="tela-sub" style="color:#fff">${t('screen_vote_timeout')}</p>` : ''}
             <div class="screen-vr-cols">
                 <div class="screen-card vr-col">
                     <div class="vr-head" style="color:var(--law)">👍 ${t('vote_yes_label')}</div>
@@ -729,87 +545,22 @@ function renderScreenVoteResult(code, votes, approved, team, playerCount, timedO
                 </div>
             </div>
         </div>`;
-
-    // Após 4 segundos, avança automaticamente
-    setTimeout(() => {
-        db.ref('rooms/' + code).update({ voteEndTime: null }).then(() => {
-            if (approved) {
-                db.ref('rooms/' + code + '/votes').remove();
-                db.ref('rooms/' + code + '/status').set('mission');
-            } else {
-                db.ref('rooms/' + code).once('value').then(snap => {
-                    const room = snap.val();
-                    const names = Object.keys(room.players);
-                    const curIdx = room.currentSheriffIndex || 0;
-                    const nextIdx = (curIdx + 1) % names.length;
-                    const newRejected = (room.rejectedTeams || 0) + 1;
-                    db.ref('rooms/' + code).update({
-                        currentSheriffName: names[nextIdx],
-                        currentSheriffIndex: nextIdx,
-                        rejectedTeams: newRejected,
-                        votes: null,
-                        proposedTeam: null,
-                        pickEndTime: null,
-                        status: newRejected >= 5 ? 'gameover_outlaw' : 'board'
-                    });
-                });
-            }
-            setTimeout(() => { _screenVoteResolved = false; }, 1500);
-        });
-    }, 4000);
-}
-
-// Cronômetro visual (anel + texto), baseado no tempo de término sincronizado
-function startScreenTimer(endTime, totalMs) {
-    const arc = document.getElementById('screen-timer-arc');
-    const txt = document.getElementById('screen-timer-text');
-    const circ = 276.5;
-    function tick() {
-        const remaining = Math.max(0, endTime - Date.now());
-        const frac = remaining / totalMs;
-        if (arc) arc.style.strokeDashoffset = (circ * (1 - frac)).toFixed(1);
-        if (txt) {
-            const secs = Math.ceil(remaining / 1000);
-            const m = Math.floor(secs / 60);
-            const s = secs % 60;
-            txt.innerText = `${m}:${s.toString().padStart(2, '0')}`;
-        }
-        if (remaining <= 0) return;
-        requestAnimationFrame(tick);
-    }
-    tick();
 }
 
 // ============================================
-// TELÃO — MISSÃO EM ANDAMENTO (suspense + processa o resultado)
+// TELÃO — MISSÃO EM ANDAMENTO (só mostra QUEM já decidiu, nunca o quê)
 // ============================================
-let _screenMissionShown = false;
-function renderScreenMission(code, room) {
-    if (_screenMissionResolved) return;
-    if (_screenMissionShown) return;
-    _screenMissionShown = true;
+function renderScreenMission(code, sala) {
     showScreen('screen-screen-board');
     const content = document.getElementById('screen-board-content');
-    const players = Object.values(room.players);
-    const team = room.proposedTeam || [];
-    const cfg = GAME_CONFIG[players.length];
-    const missionIdx = room.currentMissionIndex || 0;
-
     const byName = {};
-    players.forEach(p => byName[p.name] = p);
-
-    // miniatura da trilha
-    const trackHolder = document.createElement('div');
-    buildMissionTrack(trackHolder, cfg.missions, room.missionResults || {}, missionIdx,
-        cfg.twoFailsRequired === undefined ? -1 : cfg.twoFailsRequired, -1);
+    jogadoresDe(sala).forEach(p => { byName[p.name] = p; });
+    const team = lista(sala.proposedTeam);
 
     content.innerHTML = `
-        <div class="tela-top">
-            <div class="tela-brand">★ SALOON ★</div>
-            <div class="tela-code">SALA ${code}</div>
-        </div>
+        ${telaoTopo(code)}
         <div class="mini-board"><span class="mb-label">${t('screen_track')}</span>
-            <div class="mini-track">${trackHolder.innerHTML}</div></div>
+            <div class="mini-track">${miniTrilha(sala)}</div></div>
         <h1 class="tela-h1" style="color:var(--accent)">${t('screen_mission_title')}</h1>
         <p class="tela-sub" style="color:#fff">${t('screen_mission_sub')}</p>
         <p class="screen-dust">· · · ${t('screen_mission_dust')} · · ·</p>
@@ -818,76 +569,36 @@ function renderScreenMission(code, room) {
             <div class="screen-status-line" id="screen-mission-status">0 ${t('screen_of')} ${team.length} ${t('screen_agents_decided')}</div>
         </div>`;
 
-    // agentes em missão
     const agentsEl = document.getElementById('screen-agents');
     team.forEach(name => {
-        const av = (byName[name] && byName[name].avatar) || 'avatars/avatar1.png';
+        const av = (byName[name] && byName[name].avatar) || AVATARES[0];
         const div = document.createElement('div');
         div.className = 'screen-agent';
         div.dataset.name = name;
-        div.innerHTML = `<div class="ag-av"><img src="${av}"><div class="ag-badge ag-think">…</div></div><span class="ag-name">${name}</span>`;
+        div.innerHTML = `<div class="ag-av"><img src="${esc(av)}" alt=""><div class="ag-badge ag-think">…</div></div><span class="ag-name">${esc(name)}</span>`;
         agentsEl.appendChild(div);
-    });
-
-    // monitora as escolhas (sem revelar O QUE cada um escolheu, só SE escolheu)
-    db.ref('rooms/' + code + '/missionChoices').off();
-    db.ref('rooms/' + code + '/missionChoices').on('value', snap => {
-        const choices = snap.val() || {};
-        const decided = Object.keys(choices);
-        const statusEl = document.getElementById('screen-mission-status');
-        if (statusEl) statusEl.innerText = `${decided.length} ${t('screen_of')} ${team.length} ${t('screen_agents_decided')}`;
-        // marca quem já decidiu
-        document.querySelectorAll('.screen-agent').forEach(el => {
-            if (decided.includes(el.dataset.name)) {
-                el.classList.add('decided');
-                const badge = el.querySelector('.ag-badge');
-                if (badge) { badge.classList.remove('ag-think'); badge.classList.add('ag-check'); badge.innerText = '✓'; }
-            }
-        });
-
-        // TELÃO é o juiz: quando todos decidiram, processa o resultado
-        if (team.length > 0 && decided.length >= team.length) {
-            db.ref('rooms/' + code + '/missionChoices').off();
-            const sabotages = Object.values(choices).filter(c => c === 'sabotage').length;
-            db.ref('rooms/' + code + '/missionResult').set({ sabotages, missionIndex: missionIdx, total: team.length });
-            db.ref('rooms/' + code + '/status').set('missionResult');
-        }
     });
 }
 
 // ============================================
-// TELÃO — RESULTADO DA MISSÃO (mostra e avança; é o juiz)
+// TELÃO — RESULTADO DA MISSÃO (a mesma animação das fichas; segue sozinho)
 // ============================================
-let _screenMissionResolved = false;
-function renderScreenMissionResult(code, room) {
-    if (_screenMissionResolved) return;
-    _screenMissionResolved = true;
-    _screenMissionShown = false; // libera para a próxima missão
-
+function renderScreenMissionResult(code, sala) {
     showScreen('screen-screen-board');
     const content = document.getElementById('screen-board-content');
-    const players = Object.values(room.players);
-    const cfg = GAME_CONFIG[players.length];
-    const result = room.missionResult || { sabotages: 0, missionIndex: room.currentMissionIndex || 0, total: 0 };
+    const cfg = GAME_CONFIG[nomesDe(sala).length];
+    const result = sala.missionResult || { sabotages: 0, missionIndex: sala.currentMissionIndex || 0 };
     const missionIdx = result.missionIndex || 0;
     const sabotages = result.sabotages || 0;
     const total = result.total || cfg.missions[missionIdx];
+    const missionSuccess = missaoCumprida(sala, result);
 
-    // quantas sabotagens são necessárias (missão 4 com 7+ jogadores pede 2)
-    const failsRequired = (cfg.twoFailsRequired === missionIdx) ? 2 : 1;
-    const missionSuccess = sabotages < failsRequired;
-
-    // resultado aplicado na trilha
-    const mResults = Object.assign({}, room.missionResults || {});
+    // resultado já aplicado na trilha (a ficha vira)
+    const mResults = Object.assign({}, sala.missionResults);
     mResults[missionIdx] = missionSuccess;
 
-    // Monta a estrutura para a animação de fichas (a mesma do jogo normal),
-    // com os elementos que playMissionResult espera + a trilha no topo.
     content.innerHTML = `
-        <div class="tela-top">
-            <div class="tela-brand">★ SALOON ★</div>
-            <div class="tela-code">SALA ${code}</div>
-        </div>
+        ${telaoTopo(code)}
         <div class="mini-board"><span class="mb-label">${t('screen_track')}</span>
             <div class="mini-track" id="mr-track"></div></div>
         <div class="screen-mr-result">
@@ -901,53 +612,13 @@ function renderScreenMissionResult(code, room) {
             <button id="screen-mr-next-hidden" class="hidden"></button>
         </div>`;
 
-    // trilha no topo (com a virada da ficha recém-resolvida)
-    const mrTrack = document.getElementById('mr-track');
-    if (mrTrack) {
-        buildMissionTrack(mrTrack, cfg.missions, mResults, missionIdx,
-            cfg.twoFailsRequired === undefined ? -1 : cfg.twoFailsRequired, missionIdx);
-    }
+    // A ficha da missão vira na própria trilha (montada direto na tela,
+    // senão a virada acontece numa cópia que ninguém vê).
+    buildMissionTrack(document.getElementById('mr-track'), cfg.missions, mResults, missionIdx,
+        cfg.twoFailsRequired === undefined ? -1 : cfg.twoFailsRequired, missionIdx);
 
-    // Função que avança o jogo (chamada após a animação completa)
-    let _advanced = false;
-    const advance = () => {
-        if (_advanced) return;
-        _advanced = true;
-        const winsLaw    = Object.values(mResults).filter(r => r === true).length;
-        const winsOutlaw = Object.values(mResults).filter(r => r === false).length;
-        const names = Object.keys(room.players);
-        const curIdx = room.currentSheriffIndex || 0;
-        const nextIdx = (curIdx + 1) % names.length;
-
-        const updates = {
-            missionChoices: null,
-            proposedTeam:   null,
-            missionResult:  null,
-            pickEndTime:    null,
-            voteEndTime:    null,
-            [`missionResults/${missionIdx}`]: missionSuccess,
-            currentSheriffName:  names[nextIdx],
-            currentSheriffIndex: nextIdx,
-        };
-        if (winsLaw >= 3) {
-            updates['status'] = (room.extras && room.extras.roles) ? 'boss_assassination' : 'gameover_law';
-        } else if (winsOutlaw >= 3) {
-            updates['status'] = 'gameover_outlaw_missions';
-        } else {
-            updates['currentMissionIndex'] = missionIdx + 1;
-            if ((missionIdx === 1 || missionIdx === 2) && room.extras && room.extras.revolver && room.revolverOwnerName) {
-                updates['status'] = 'duel_choose';
-                updates['currentMissionIndex'] = missionIdx;
-            } else {
-                updates['status'] = 'board';
-            }
-        }
-        db.ref('rooms/' + code).update(updates);
-        setTimeout(() => { _screenMissionResolved = false; }, 1500);
-    };
-
-    // Animação completa de fichas (suspense sempre na vermelha; aleatório na
-    // última azul de missões limpas) — a mesma do jogo normal.
+    const fase = faseAtual;
+    const segue = () => avancaSala(code, fase, aplicaResultadoMissao);
     playMissionResult({
         rowId: 'screen-result-chip-row',
         boardId: 'screen-sabotage-board',
@@ -958,50 +629,42 @@ function renderScreenMissionResult(code, room) {
         sabotages: sabotages,
         total: total,
         missionSuccess: missionSuccess,
-        onNext: advance
+        onNext: segue
     });
 
-    // No telão não há botão "próxima rodada": avança sozinho ~3,5s após o
-    // fim da animação (tempo de todos verem o veredito).
-    const chipsTime = 300 + total * 700 + (sabotages > 0 ? 1900 : 0) + 1400;
-    setTimeout(advance, chipsTime + 3500);
+    // No telão não há botão "próxima rodada": segue sozinho uns segundos
+    // depois do veredito, para todos verem.
+    const animacao = REDUCED_MOTION ? 0 : 300 + total * 700 + (sabotages > 0 ? 1900 : 0) + 1400;
+    agenda(segue, animacao + TEMPOS.resultadoMissao);
 }
 
-// Placeholders das telas restantes (próxima fatia)
 // ============================================
-// TELÃO — DUELO (suspense; o resultado secreto fica no celular do atirador)
+// TELÃO — DUELO (suspense; o segredo fica no celular de quem desafiou)
 // ============================================
-function renderScreenDuel(code, room) {
+function renderScreenDuel(code, sala) {
     showScreen('screen-screen-board');
     const content = document.getElementById('screen-board-content');
-    const owner = room.revolverOwnerName || '';
-    const duel = room.duel || null;
+    const duel = sala.status === 'duel_action' ? (sala.duel || {}) : null;
 
     if (!duel) {
-        // fase de escolha: o dono do revólver decide quem desafiar
+        // o dono do revólver decide quem desafiar
         content.innerHTML = `
-            <div class="tela-top">
-                <div class="tela-brand">★ SALOON ★</div>
-                <div class="tela-code">SALA ${code}</div>
-            </div>
+            ${telaoTopo(code)}
             <div class="screen-duel-center">
-                <div class="screen-duel-icon"><img src="images/revolver.png"></div>
+                <div class="screen-duel-icon"><img src="images/revolver.png" alt=""></div>
                 <h1 class="tela-h1" style="color:var(--accent)">${t('screen_duel_title')}</h1>
-                <p class="tela-sub" style="color:#fff">${t('screen_duel_choose_sub', { name: owner })}</p>
+                <p class="tela-sub" style="color:#fff">${t('screen_duel_choose_sub', { name: esc(sala.revolverOwnerName || '') })}</p>
                 <p class="screen-dust">· · · ${t('screen_duel_dust')} · · ·</p>
             </div>`;
     } else {
-        // fase de ação: atirar ou recuar
+        // atirar ou abaixar a arma
         content.innerHTML = `
-            <div class="tela-top">
-                <div class="tela-brand">★ SALOON ★</div>
-                <div class="tela-code">SALA ${code}</div>
-            </div>
+            ${telaoTopo(code)}
             <div class="screen-duel-center">
                 <div class="screen-duel-faceoff">
-                    <span class="duel-name">${duel.shooterName}</span>
-                    <div class="screen-duel-icon"><img src="images/revolver.png"></div>
-                    <span class="duel-name">${duel.targetName}</span>
+                    <span class="duel-name">${esc(duel.shooterName)}</span>
+                    <div class="screen-duel-icon"><img src="images/revolver.png" alt=""></div>
+                    <span class="duel-name">${esc(duel.targetName)}</span>
                 </div>
                 <h1 class="tela-h1" style="color:var(--outlaw)">${t('screen_duel_faceoff_title')}</h1>
                 <p class="tela-sub" style="color:#fff">${t('screen_duel_faceoff_sub')}</p>
@@ -1010,42 +673,31 @@ function renderScreenDuel(code, room) {
     }
 }
 
-// Resultado do duelo no telão: neutro (o segredo do time fica no celular do atirador)
-function renderScreenDuelResult(code, room) {
+// Resultado do duelo no telão: neutro (o time do alvo fica no celular de quem desafiou)
+function renderScreenDuelResult(code, sala) {
     showScreen('screen-screen-board');
     const content = document.getElementById('screen-board-content');
-    const result = room.duelResult || {};
-    const sShoot = result.shooterAction === 'shoot';
-    const tShoot = result.targetAction === 'shoot';
-    let txt;
-    if (sShoot && tShoot) txt = t('duel_both_shot');
-    else if (!sShoot && !tShoot) txt = t('duel_both_down');
-    else txt = t('duel_mixed');
+    const result = sala.duelResult || {};
+    const txt = t(DUELO_TEXTO[result.tipo] || 'duel_both_down');
+    if (result.tipo !== 'ambos_abaixaram') AudioManager.playSFX('shot');
 
     content.innerHTML = `
-        <div class="tela-top">
-            <div class="tela-brand">★ SALOON ★</div>
-            <div class="tela-code">SALA ${code}</div>
-        </div>
+        ${telaoTopo(code)}
         <div class="screen-duel-center">
             <div class="screen-duel-icon" style="animation:none">💥</div>
             <h1 class="tela-h1" style="color:var(--outlaw)">${t('screen_duel_done')}</h1>
-            <p class="tela-sub" style="color:#fff">${txt.replace(/<[^>]+>/g, '')}</p>
+            <p class="tela-sub" style="color:#fff">${txt.replace(/<[^>]+>/g, ' ')}</p>
             <p class="screen-dust">· · · ${t('screen_duel_resolved')} · · ·</p>
         </div>`;
 }
+
 // ============================================
-// TELÃO — ADIVINHAÇÃO DO CHEFE (suspense)
-// O Chefe mira no celular; o telão mostra o suspense sem revelar.
+// TELÃO — A ÚLTIMA BALA DO CHEFE (suspense)
 // ============================================
-function renderScreenBossAssassination(code, room) {
+function renderScreenBossAssassination(code, sala) {
     showScreen('screen-screen-board');
-    const content = document.getElementById('screen-board-content');
-    content.innerHTML = `
-        <div class="tela-top">
-            <div class="tela-brand">★ SALOON ★</div>
-            <div class="tela-code">SALA ${code}</div>
-        </div>
+    document.getElementById('screen-board-content').innerHTML = `
+        ${telaoTopo(code)}
         <div class="screen-boss-center">
             <div class="screen-boss-icon">${suitSVG('BOSS')}</div>
             <h1 class="tela-h1" style="color:var(--outlaw)">${t('screen_boss_title')}</h1>
@@ -1057,50 +709,36 @@ function renderScreenBossAssassination(code, room) {
 // ============================================
 // TELÃO — FIM DE JOGO (revela todos os papéis)
 // ============================================
-function renderScreenGameOver(code, room, status) {
+function renderScreenGameOver(code, sala) {
     showScreen('screen-screen-board');
     const content = document.getElementById('screen-board-content');
-    const players = Object.values(room.players);
-
-    // determina o vencedor e a razão
-    let winner, reason;
-    if (status === 'gameover_law') { winner = 'LAW'; reason = t('win_law_missions'); }
-    else if (status === 'gameover_outlaw') { winner = 'OUTLAW'; reason = t('win_outlaw_rejects'); }
-    else if (status === 'gameover_outlaw_missions') { winner = 'OUTLAW'; reason = t('win_outlaw_missions'); }
-    else if (status === 'gameover_boss_win') { winner = 'OUTLAW'; reason = t('win_boss_shot'); }
-    else if (status === 'gameover_boss_fail') { winner = 'LAW'; reason = t('win_boss_missed'); }
-    else { winner = 'LAW'; reason = ''; }
-
-
+    const players = jogadoresDe(sala);
+    const [winner, motivo] = DESFECHOS[sala.status] || ['LAW', ''];
     const winnerColor = winner === 'LAW' ? 'var(--law)' : 'var(--outlaw)';
     const winnerTxt = winner === 'LAW' ? t('law_wins') : t('outlaw_wins');
+    AudioManager.playSFX(winner === 'LAW' ? 'success' : 'fail');
 
-    // monta as duas colunas de jogadores com papéis revelados
     function playerRow(p) {
         let suitKey = p.role, tag = '';
         if (p.isBoss) { suitKey = 'BOSS'; tag = t('tag_boss'); }
         else if (p.isDelegado) { suitKey = 'DELEGADO'; tag = t('tag_delegado'); }
         else if (p.isEscrivao) { suitKey = 'ESCRIVAO'; tag = t('tag_escrivao'); }
         else if (p.isFalsificador) { suitKey = 'FALSIFICADOR'; tag = t('tag_falsificador'); }
-        const av = p.avatar || 'avatars/avatar1.png';
         const tagHtml = tag ? `<span class="sgo-tag">${tag.replace(/[()]/g, '').trim()}</span>` : '';
         return `<div class="sgo-row ${p.role === 'LAW' ? 'law' : 'outlaw'}">
-            <div class="sgo-av"><img src="${av}"></div>
-            <span class="sgo-name">${p.name}</span>${tagHtml}
+            <div class="sgo-av"><img src="${esc(p.avatar || AVATARES[0])}" alt=""></div>
+            <span class="sgo-name">${esc(p.name)}</span>${tagHtml}
             <span class="sgo-suit">${suitSVG(suitKey)}</span>
         </div>`;
     }
     const lawRows = players.filter(p => p.role === 'LAW').map(playerRow).join('');
-    const outRows = players.filter(p => p.role === 'OUTLAW').map(playerRow).join('');
+    const outRows = players.filter(p => p.role !== 'LAW').map(playerRow).join('');
 
     content.innerHTML = `
-        <div class="tela-top">
-            <div class="tela-brand">★ SALOON ★</div>
-            <div class="tela-code">SALA ${code}</div>
-        </div>
+        ${telaoTopo(code)}
         <div class="screen-gameover">
             <h1 class="sgo-title" style="color:${winnerColor}">${winnerTxt}</h1>
-            <p class="sgo-reason">${reason}</p>
+            <p class="sgo-reason">${t(motivo)}</p>
             <div class="sgo-cols">
                 <div class="sgo-col">
                     <div class="sgo-head" style="color:var(--law)">${t('team_law')}</div>
@@ -1114,90 +752,12 @@ function renderScreenGameOver(code, room, status) {
             <button id="btn-screen-newgame" class="btn btn-primary lg">${t('screen_new_game')}</button>
         </div>`;
 
-    // botão de nova partida: volta todos ao lobby
+    // Nova partida: a sala volta ao lobby com os mesmos jogadores, e os
+    // celulares voltam sozinhos para a sala de espera.
+    const fase = faseAtual;
     const newBtn = document.getElementById('btn-screen-newgame');
-    if (newBtn) {
-        newBtn.onclick = () => {
-            // reseta a sala para o lobby, mantendo os jogadores
-            const resetUpdates = {
-                status: 'waiting', votes: null, proposedTeam: null, missionChoices: null,
-                missionResult: null, missionResults: null, voteEndTime: null,
-                currentMissionIndex: 0, rejectedTeams: 0,
-                delegadoName: null, delegadoTargetName: null, escrivaoName: null,
-                escrivaoNames: null, falsificadorName: null, revolverOwnerName: null
-            };
-            // limpa os papéis de cada jogador
-            const players2 = room.players || {};
-            Object.keys(players2).forEach(name => {
-                resetUpdates[`players/${name}/role`] = null;
-                resetUpdates[`players/${name}/isBoss`] = false;
-                resetUpdates[`players/${name}/isDelegado`] = false;
-                resetUpdates[`players/${name}/isEscrivao`] = false;
-                resetUpdates[`players/${name}/isFalsificador`] = false;
-            });
-            db.ref('rooms/' + code).update(resetUpdates);
-            showScreen('screen-screen-lobby');
-        };
-    }
-}
-
-// ============================================
-// CELULAR — cronômetro pequeno do Xerife (sincronizado com o telão)
-// ============================================
-function showPhonePickTimer(code) {
-    db.ref('rooms/' + code + '/pickEndTime').once('value').then(snap => {
-        let endTime = snap.val();
-        if (!endTime) return;
-        let pill = document.getElementById('phone-pick-timer');
-        if (!pill) {
-            pill = document.createElement('div');
-            pill.id = 'phone-pick-timer';
-            pill.className = 'phone-mini-timer';
-            const area = document.getElementById('online-sheriff-area');
-            if (area) area.insertBefore(pill, area.firstChild);
-        }
-        pill.style.display = 'block';
-        if (window._phonePickRAF) cancelAnimationFrame(window._phonePickRAF);
-        function tick() {
-            const remaining = Math.max(0, endTime - Date.now());
-            const secs = Math.ceil(remaining / 1000);
-            const m = Math.floor(secs / 60);
-            const s = secs % 60;
-            if (pill) pill.innerText = `⏱ ${m}:${s.toString().padStart(2, '0')}`;
-            if (remaining <= 0) { if (pill) pill.style.display = 'none'; return; }
-            window._phonePickRAF = requestAnimationFrame(tick);
-        }
-        tick();
-    });
-}
-
-// ============================================
-// CELULAR — cronômetro pequeno (sincronizado com o telão via voteEndTime)
-// ============================================
-function showPhoneMiniTimer(code) {
-    db.ref('rooms/' + code + '/voteEndTime').once('value').then(snap => {
-        const endTime = snap.val();
-        if (!endTime) return;
-        // cria a pílula do cronômetro no topo da tela de votação, se não existir
-        let pill = document.getElementById('phone-mini-timer');
-        if (!pill) {
-            pill = document.createElement('div');
-            pill.id = 'phone-mini-timer';
-            pill.className = 'phone-mini-timer';
-            const screen = document.getElementById('screen-online-voting');
-            if (screen) screen.insertBefore(pill, screen.firstChild);
-        }
-        pill.style.display = 'block';
-        if (window._phoneTimerRAF) cancelAnimationFrame(window._phoneTimerRAF);
-        function tick() {
-            const remaining = Math.max(0, endTime - Date.now());
-            const secs = Math.ceil(remaining / 1000);
-            const m = Math.floor(secs / 60);
-            const s = secs % 60;
-            if (pill) pill.innerText = `⏱ ${m}:${s.toString().padStart(2, '0')}`;
-            if (remaining <= 0) { if (pill) pill.style.display = 'none'; return; }
-            window._phoneTimerRAF = requestAnimationFrame(tick);
-        }
-        tick();
-    });
+    newBtn.onclick = () => {
+        newBtn.disabled = true;
+        avancaSala(code, fase, novaPartida);
+    };
 }

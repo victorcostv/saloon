@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Saloon</title>
     <meta name="description" content="Jogo de dedução social para 5 a 10 pessoas, em um único aparelho.">
-    <link rel="stylesheet" href="style.css?v=mudbczdu">
-    <link rel="stylesheet" href="web.css?v=mudbczdu">
+    <link rel="stylesheet" href="style.css?v=muiwwybp">
+    <link rel="stylesheet" href="web.css?v=muiwwybp">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="images/icon.png">
     <link rel="apple-touch-icon" href="images/icon.png">
@@ -494,7 +494,7 @@
     <section id="screen-screen-lobby" class="screen screen-tela">
         <div class="tela-top">
             <div class="tela-brand">★ SALOON ★</div>
-            <div class="tela-code">SALA <span id="screen-room-code">----</span></div>
+            <div class="tela-code"><span data-i18n="screen_room">SALA</span> <span id="screen-room-code">----</span></div>
         </div>
         <h1 class="tela-h1" data-i18n="screen_join_title">Entrem pelo celular</h1>
         <p class="tela-sub" data-i18n="screen_join_sub_qr">Escaneiem o QR code ou entrem com o código da sala.</p>
@@ -509,7 +509,7 @@
         <div class="tela-bottom">
             <button id="btn-screen-start" class="btn btn-primary lg hidden" data-i18n="screen_start">Começar a partida</button>
             <p id="screen-min-players" class="tela-hint" data-i18n="screen_need_players">Aguardando jogadores (mínimo 5)</p>
-            <button id="btn-screen-leave" class="btn btn-ghost mt-2" data-i18n="leave_room">Encerrar sala</button>
+            <button id="btn-screen-leave" class="btn btn-ghost mt-2" data-i18n="close_room">Encerrar sala</button>
         </div>
     </section>
 
@@ -545,6 +545,7 @@
             <p class="scene-eyebrow" data-i18n="ready_title">Tudo certo!</p>
             <h1 id="online-ready-count" class="scene-name">—</h1>
             <p class="scene-note" data-i18n="ready_note">Esperando os outros jogadores verem as cartas.</p>
+            <p id="online-ready-faltam" class="faltam"></p>
         </div>
         <div class="pass-acao">
             <button id="online-btn-review-card" class="btn" data-i18n="review_card_short">Ver minha carta</button>
@@ -586,6 +587,7 @@
         <p class="text-center" data-i18n="proposed_team">Equipe proposta:</p>
         <ul id="online-voting-team" class="list-group cascata"></ul>
         <p id="online-votes-count" class="contagem-votos">0/0</p>
+        <p id="online-votes-faltam" class="faltam"></p>
         <div id="online-vote-area" class="voting-actions acoes-fixas">
             <button id="online-btn-vote-yes" class="btn btn-law lg" data-i18n="approve">Aprovar</button>
             <button id="online-btn-vote-no" class="btn btn-outlaw lg" data-i18n="reject">Rejeitar</button>
@@ -619,6 +621,7 @@
             <p class="scene-eyebrow" data-i18n="mission_wait_title">Missão em andamento</p>
             <h1 class="scene-name" id="online-mission-wait-num">Missão</h1>
             <p id="online-mission-waiting-text" class="scene-note"></p>
+            <p id="online-mission-faltam" class="faltam"></p>
         </div>
     </section>
 
@@ -680,6 +683,7 @@
                 <p class="nota-carta" data-i18n="only_you_see">Apenas você está vendo isso.</p>
             </div>
         </div>
+        <p id="online-duel-result-waiting" class="aviso-espera hidden" style="margin-top:auto;"></p>
         <button id="online-btn-duel-result-next" class="btn btn-primary lg" style="margin-top:auto;" data-i18n="continue_game">Continuar o jogo</button>
     </section>
 
@@ -711,7 +715,7 @@
         <div class="roles-reveal-final">
             <h3 class="time-lei" data-i18n="team_law">Equipe da Lei</h3>
             <ul id="online-final-law-list" class="list-group"></ul>
-            <h3 class="time-fora" data-i18n="team_outlaws">Fora-da-Lei</h3>
+            <h3 class="time-fora" data-i18n="team_outlaws">Fora da Lei</h3>
             <ul id="online-final-outlaw-list" class="list-group"></ul>
         </div>
         <div class="acoes-fixas">
@@ -737,13 +741,13 @@
     });
     const db = firebase.database();
 </script>
-<script src="i18n.js?v=mudbczdu"></script>
-<script src="i18n-web.js?v=mudbczdu"></script>
-<script src="art.js?v=mudbczdu"></script>
-<script src="fx.js?v=mudbczdu"></script>
-<script src="app.js?v=mudbczdu"></script>
-<script src="qrcode.js?v=mudbczdu"></script>
-<script src="online.js?v=mudbczdu"></script>
-<script src="screen.js?v=mudbczdu"></script>
+<script src="i18n.js?v=muiwwybp"></script>
+<script src="i18n-web.js?v=muiwwybp"></script>
+<script src="art.js?v=muiwwybp"></script>
+<script src="fx.js?v=muiwwybp"></script>
+<script src="app.js?v=muiwwybp"></script>
+<script src="qrcode.js?v=muiwwybp"></script>
+<script src="online.js?v=muiwwybp"></script>
+<script src="screen.js?v=muiwwybp"></script>
 </body>
 </html>

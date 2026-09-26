@@ -1396,7 +1396,9 @@ function showDuelReveal(shownIdx) {
     showScreen('screen-duel-reveal');
     document.getElementById('intimidated-name').innerText = state.players[shownIdx].name;
     const rLabel = document.getElementById('intimidated-role');
-    if (state.players[shownIdx].role === 'LAW') {
+    // O Falsificador parece da Lei no duelo (é o disfarce dele).
+    const alvo = state.players[shownIdx];
+    if (alvo.role === 'LAW' || alvo.isFalsificador) {
         rLabel.innerText  = t('law_resistance');
         rLabel.className  = "neon-text blue display";
     } else {
@@ -1555,7 +1557,7 @@ function showTutorial(type) {
     const contentDiv = document.getElementById('tutorial-content');
     const dict = I18N[LANG].tutorials || I18N.pt.tutorials;
     contentDiv.innerHTML = dict[type] || '';
-    const titulos = { GENERAL: 'how_to_play', DELEGADO: 'extra_roles', FARSANTE: 'extra_farsante', REVOLVER: 'extra_revolver' };
+    const titulos = { GENERAL: 'how_to_play', DELEGADO: 'extra_roles', FARSANTE: 'extra_farsante', REVOLVER: 'extra_revolver', PARTY: 'party_mode_title' };
     document.getElementById('tutorial-title').innerText = t(titulos[type] || 'how_to_play');
 
     // As cartinhas usam a moldura e o ícone das cartas de verdade, e começam
