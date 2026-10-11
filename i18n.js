@@ -3,12 +3,25 @@
 // ════════════════════════════════════════════
 
 // Ordem da lista no botão "Idioma" do menu. html = atributo lang da página.
+// As bandeiras são SVG: o emoji de bandeira vira duas letras no Windows.
+const _bandeira = (desenho) => '<svg class="bandeira" viewBox="0 0 30 20" aria-hidden="true">' + desenho + '</svg>';
 const IDIOMAS = {
-    pt: { nome: 'Português', bandeira: '🇧🇷', html: 'pt-BR' },
-    en: { nome: 'English',   bandeira: '🇺🇸', html: 'en' },
-    es: { nome: 'Español',   bandeira: '🇪🇸', html: 'es' },
-    fr: { nome: 'Français',  bandeira: '🇫🇷', html: 'fr' },
-    de: { nome: 'Deutsch',   bandeira: '🇩🇪', html: 'de' }
+    pt: { nome: 'Português', html: 'pt-BR', bandeira: _bandeira(
+        '<rect width="30" height="20" fill="#229e45"/><path d="M15 2.4 27.2 10 15 17.6 2.8 10z" fill="#f8d90f"/>'
+        + '<circle cx="15" cy="10" r="4.7" fill="#2b49a3"/><path d="M10.5 9c3-.8 6.4-.3 9 1.4" fill="none" stroke="#fff" stroke-width="1.1"/>') },
+    en: { nome: 'English', html: 'en', bandeira: _bandeira(
+        '<rect width="30" height="20" fill="#fff"/>'
+        + '<path d="M0 0h30v2.86H0zM0 5.71h30v2.86H0zM0 11.43h30v2.86H0zM0 17.14h30V20H0z" fill="#c8102e"/>'
+        + '<rect width="13" height="11.43" fill="#1f3a8a"/>'
+        + '<g fill="#fff"><circle cx="2.6" cy="2.4" r=".9"/><circle cx="6.5" cy="2.4" r=".9"/><circle cx="10.4" cy="2.4" r=".9"/>'
+        + '<circle cx="4.55" cy="5.7" r=".9"/><circle cx="8.45" cy="5.7" r=".9"/>'
+        + '<circle cx="2.6" cy="9" r=".9"/><circle cx="6.5" cy="9" r=".9"/><circle cx="10.4" cy="9" r=".9"/></g>') },
+    es: { nome: 'Español', html: 'es', bandeira: _bandeira(
+        '<rect width="30" height="20" fill="#c60b1e"/><rect y="5" width="30" height="10" fill="#ffc400"/>') },
+    fr: { nome: 'Français', html: 'fr', bandeira: _bandeira(
+        '<rect width="30" height="20" fill="#fff"/><rect width="10" height="20" fill="#0055a4"/><rect x="20" width="10" height="20" fill="#ef4135"/>') },
+    de: { nome: 'Deutsch', html: 'de', bandeira: _bandeira(
+        '<rect width="30" height="20" fill="#ffce00"/><rect width="30" height="13.34" fill="#dd0000"/><rect width="30" height="6.67" fill="#000"/>') }
 };
 
 const I18N = {
@@ -1146,9 +1159,9 @@ function applyLanguage() {
         el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria')));
     });
 
-    // O botão "Idioma" do menu mostra o idioma atual.
-    const atual = document.getElementById('menu-lang-atual');
-    if (atual) atual.innerText = IDIOMAS[LANG].bandeira + ' ' + IDIOMAS[LANG].nome;
+    // O botão "Idioma" do menu mostra só a bandeira do idioma atual.
+    const bandeira = document.getElementById('menu-lang-bandeira');
+    if (bandeira) bandeira.innerHTML = IDIOMAS[LANG].bandeira;
 
     // Botão de som depende do estado do AudioManager
     if (typeof AudioManager !== 'undefined') AudioManager.rotulo();

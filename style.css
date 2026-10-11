@@ -987,8 +987,8 @@ body.scene-mode #btn-hamburger { display: none !important; }
 }
 
 .menu-btn {
-    justify-content: center;
-    padding: 15px;
+    justify-content: flex-start;
+    padding: 13px 16px;
     border: 4px solid var(--vinho);
     border-radius: 20px;
     font-family: var(--font-display);
@@ -999,19 +999,39 @@ body.scene-mode #btn-hamburger { display: none !important; }
     text-align: left;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
     box-shadow: 0 4px 0 var(--vinho);
     transition: transform 0.1s, box-shadow 0.1s;
 }
 .menu-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--vinho); }
 
-/* Botão com o valor atual à direita (Idioma: 🇧🇷 Português). */
-.menu-btn-valor { justify-content: space-between; }
-.menu-valor {
-    font-family: var(--font-body);
-    font-weight: 800;
-    font-size: 0.95rem;
-    white-space: nowrap;
+/* Ícone de cada item: mesmo traço vinho do botão de cartas. */
+.menu-icone {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    fill: none;
+    stroke: var(--vinho);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.menu-rotulo { line-height: 1; padding-top: 2px; }
+/* Som: alto-falante ligado ou riscado, conforme o estado. */
+#menu-sound-btn .som-off,
+#menu-sound-btn.mudo .som-on { display: none; }
+#menu-sound-btn.mudo .som-off { display: block; }
+/* Idioma: o ícone é a bandeira do idioma atual. */
+.menu-bandeira { display: flex; align-items: center; justify-content: center; }
+
+/* Bandeira em SVG (menu e lista de idiomas). */
+svg.bandeira {
+    display: block;
+    width: 30px;
+    height: 20px;
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px var(--vinho);
+    overflow: hidden;
 }
 
 /* ── Janelas abertas pelo menu (idioma e feedback) ──
@@ -1041,7 +1061,7 @@ body.scene-mode #btn-hamburger { display: none !important; }
     cursor: pointer;
     transition: background 0.15s;
 }
-.lang-opt .bandeira { font-size: 1.4rem; line-height: 1; }
+.lang-opt svg.bandeira { flex: none; }
 .lang-opt .nome { flex: 1; }
 .lang-opt.active { background: var(--accent); }
 /* Estrela no idioma escolhido, como nos itens selecionados do jogo. */

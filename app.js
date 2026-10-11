@@ -182,8 +182,10 @@ const AudioManager = {
         const btn = document.getElementById('menu-sound-btn');
         if (!btn) return;
         const chave = this.isMuted ? 'sound_off' : 'sound_on';
-        btn.setAttribute('data-i18n', chave);
-        btn.innerText = t(chave);
+        btn.classList.toggle('mudo', this.isMuted);   // troca o ícone (CSS)
+        const texto = btn.querySelector('.menu-rotulo');
+        texto.setAttribute('data-i18n', chave);
+        texto.innerText = t(chave);
     },
 
     startBGM() {
@@ -293,8 +295,7 @@ const EscolhaIdioma = {
             btn.type = 'button';
             btn.className = 'lang-opt';
             btn.dataset.lang = codigo;
-            btn.innerHTML = '<span class="bandeira"></span><span class="nome"></span>';
-            btn.querySelector('.bandeira').innerText = IDIOMAS[codigo].bandeira;
+            btn.innerHTML = IDIOMAS[codigo].bandeira + '<span class="nome"></span>';
             btn.querySelector('.nome').innerText = IDIOMAS[codigo].nome;
             btn.classList.toggle('active', codigo === LANG);
             btn.setAttribute('aria-pressed', codigo === LANG);

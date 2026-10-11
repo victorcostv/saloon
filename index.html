@@ -46,15 +46,45 @@
     <div id="side-menu-panel">
         <h2 data-i18n="menu">Saloon</h2>
 
-        <button id="menu-sound-btn" class="menu-btn" data-i18n="sound_on">Som ativado</button>
-        <button id="menu-lang-btn" class="menu-btn menu-btn-valor" aria-haspopup="dialog">
-            <span data-i18n="language">Idioma</span>
-            <span id="menu-lang-atual" class="menu-valor">🇧🇷 Português</span>
+        <!-- Cada item: ícone à esquerda e o texto ao lado. O texto fica num
+             span próprio para a troca de idioma não apagar o ícone. -->
+        <button id="menu-sound-btn" class="menu-btn">
+            <svg class="menu-icone som-on" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3.5 9.5h3.8L12 5.5v13l-4.7-4H3.5z" fill="#fff"/>
+                <path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8"/>
+            </svg>
+            <svg class="menu-icone som-off" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3.5 9.5h3.8L12 5.5v13l-4.7-4H3.5z" fill="#fff"/>
+                <path d="m15.8 9.6 4.8 4.8M20.6 9.6l-4.8 4.8"/>
+            </svg>
+            <span class="menu-rotulo" data-i18n="sound_on">Som ativado</span>
         </button>
-        <button id="menu-tutorial-btn" class="menu-btn" data-i18n="how_to_play">Como jogar</button>
-        <button id="menu-feedback-btn" class="menu-btn" data-i18n="feedback" aria-haspopup="dialog">Enviar feedback</button>
+        <button id="menu-lang-btn" class="menu-btn" aria-haspopup="dialog">
+            <span id="menu-lang-bandeira" class="menu-icone menu-bandeira" aria-hidden="true"></span>
+            <span class="menu-rotulo" data-i18n="language">Idioma</span>
+        </button>
+        <button id="menu-tutorial-btn" class="menu-btn">
+            <svg class="menu-icone" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 6.6C9.8 5 6.8 4.6 3.2 5.1v13.2c3.6-.5 6.6 0 8.8 1.5 2.2-1.5 5.2-2 8.8-1.5V5.1C17.2 4.6 14.2 5 12 6.6z" fill="#fff"/>
+                <path d="M12 6.6v13.2"/>
+            </svg>
+            <span class="menu-rotulo" data-i18n="how_to_play">Como jogar</span>
+        </button>
+        <button id="menu-feedback-btn" class="menu-btn" aria-haspopup="dialog">
+            <svg class="menu-icone" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="5.5" width="18" height="13" rx="2.5" fill="#fff"/>
+                <path d="m3.8 7.2 8.2 6.1 8.2-6.1"/>
+            </svg>
+            <span class="menu-rotulo" data-i18n="feedback">Enviar feedback</span>
+        </button>
 
-        <button id="menu-home-btn" class="menu-btn menu-home" data-i18n="home_screen">Tela inicial</button>
+        <button id="menu-home-btn" class="menu-btn menu-home">
+            <svg class="menu-icone" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9.8V20h4.4v-5.4h3.2V20H18V9.8" fill="#fff"/>
+                <path d="M3.5 11.2 12 4l8.5 7.2"/>
+            </svg>
+            <span class="menu-rotulo" data-i18n="home_screen">Tela inicial</span>
+        </button>
     </div>
 
     <!-- ============================================
