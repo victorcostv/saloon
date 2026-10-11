@@ -241,20 +241,12 @@ const AudioManager = {
 const Haptics = {
     // Navegadores bloqueiam vibrate() enquanto não houver um toque real na página.
     userGestured: false,
-    // Independente do som: dá para jogar em silêncio e ainda sentir o jogo.
-    ligado: true,
 
     get plugin() {
         return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
     },
 
-    // O iPhone no navegador não vibra (Safari não tem vibrate()).
-    get disponivel() {
-        return !!(this.plugin || navigator.vibrate);
-    },
-
     fire(nativeCall, pattern) {
-        if (!this.ligado) return;
         const p = this.plugin;
         if (p) {
             nativeCall(p).catch(() => {});
@@ -283,21 +275,76 @@ const Haptics = {
     failure() {
         this.notify('ERROR', [80, 50, 80, 50, 200]);
         if (this.plugin) setTimeout(() => this.buzz(300), 350);
+    }
+};
+
+// ============================================
+// IDIOMA E FEEDBACK (menu lateral)
+// ============================================
+
+// Janela com a lista de idiomas. A gaveta fica aberta atrás: dá para ver o
+// menu já trocar de idioma quando a janela fecha.
+const EscolhaIdioma = {
+    abrir() {
+        const lista = document.getElementById('idiomas-lista');
+        lista.innerHTML = '';
+        for (const codigo in IDIOMAS) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'lang-opt';
+            btn.dataset.lang = codigo;
+            btn.innerHTML = '<span class="bandeira"></span><span class="nome"></span>';
+            btn.querySelector('.bandeira').innerText = IDIOMAS[codigo].bandeira;
+            btn.querySelector('.nome').innerText = IDIOMAS[codigo].nome;
+            btn.classList.toggle('active', codigo === LANG);
+            btn.setAttribute('aria-pressed', codigo === LANG);
+            btn.onclick = () => {
+                AudioManager.playSFX('chip');
+                setLanguage(codigo);
+                this.fechar();
+            };
+            lista.appendChild(btn);
+        }
+        document.getElementById('idiomas').classList.remove('hidden');
     },
 
-    alterna() {
-        this.ligado = !this.ligado;
-        this.rotulo();
-        this.select();
+    fechar() {
+        document.getElementById('idiomas').classList.add('hidden');
+    }
+};
+
+// O feedback vai pelo app de e-mail do aparelho (mailto), que funciona no
+// site e no app do iPhone sem servidor nenhum.
+const FEEDBACK_EMAIL = 'victorcostv@gmail.com';
+
+const Feedback = {
+    abrir() {
+        document.getElementById('feedback-msg').value = '';
+        document.getElementById('feedback').classList.remove('hidden');
     },
 
-    rotulo() {
-        const btn = document.getElementById('menu-vibra-btn');
-        if (!btn) return;
-        btn.hidden = !this.disponivel;
-        const chave = this.ligado ? 'vibration_on' : 'vibration_off';
-        btn.setAttribute('data-i18n', chave);
-        btn.innerText = t(chave);
+    fechar() {
+        document.getElementById('feedback').classList.add('hidden');
+        window.removeEventListener('blur', this._saiu);
+        document.removeEventListener('visibilitychange', this._saiu);
+    },
+
+    // A janela só fecha quando o app de e-mail abre por cima. Sem app de
+    // e-mail (comum no computador), ela fica com o texto e o endereço.
+    enviar(link) {
+        link.href = this.link();
+        this._saiu = this._saiu || (() => this.fechar());
+        window.addEventListener('blur', this._saiu, { once: true });
+        document.addEventListener('visibilitychange', this._saiu, { once: true });
+    },
+
+    link() {
+        const msg = document.getElementById('feedback-msg').value.trim();
+        const onde = window.Capacitor ? 'app' : 'site';
+        const corpo = (msg ? msg + '\n\n' : '') + '—\nSaloon (' + onde + ', ' + LANG + ')';
+        return 'mailto:' + FEEDBACK_EMAIL
+            + '?subject=' + encodeURIComponent(t('feedback_subject'))
+            + '&body=' + encodeURIComponent(corpo);
     }
 };
 
@@ -449,12 +496,30 @@ document.addEventListener('DOMContentLoaded', () => {
         AudioManager.toggle();
     };
     AudioManager.rotulo();
-    document.getElementById('menu-vibra-btn').onclick = () => Haptics.alterna();
-    Haptics.rotulo();
+
+    document.getElementById('menu-lang-btn').onclick = () => EscolhaIdioma.abrir();
+    document.getElementById('idiomas-fechar').onclick = () => EscolhaIdioma.fechar();
+    document.getElementById('idiomas').onclick = (e) => {
+        if (e.target.id === 'idiomas') EscolhaIdioma.fechar();
+    };
 
     document.getElementById('menu-tutorial-btn').onclick = () => {
         SideMenu.close();
         showTutorial('GENERAL');
+    };
+
+    document.getElementById('menu-feedback-btn').onclick = () => {
+        SideMenu.close();
+        Feedback.abrir();
+    };
+    const linkEmail = document.getElementById('feedback-email');
+    linkEmail.href = 'mailto:' + FEEDBACK_EMAIL;
+    linkEmail.innerText = FEEDBACK_EMAIL;
+    // O link é montado no toque: o app de e-mail abre com o texto já escrito.
+    document.getElementById('feedback-enviar').onclick = (e) => Feedback.enviar(e.currentTarget);
+    document.getElementById('feedback-cancelar').onclick = () => Feedback.fechar();
+    document.getElementById('feedback').onclick = (e) => {
+        if (e.target.id === 'feedback') Feedback.fechar();
     };
 
     document.getElementById('menu-home-btn').onclick = async () => {
@@ -484,14 +549,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!aberta) return;
         if (aberta.id === 'screen-tutorial' && tutorialAtual) showTutorial(tutorialAtual);
         if (aberta.id === 'screen-setup-players') _sincronizaSetup();
-    });
-
-    // Troca de idioma (PT 🇧🇷 / EN 🇺🇸)
-    document.querySelectorAll('.lang-opt').forEach(btn => {
-        btn.onclick = () => {
-            AudioManager.playSFX('chip');
-            setLanguage(btn.dataset.lang);
-        };
     });
 
     // Listener global de cliques: todo botão vibra, mas o engatilhar da arma

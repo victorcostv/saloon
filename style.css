@@ -1004,36 +1004,78 @@ body.scene-mode #btn-hamburger { display: none !important; }
     transition: transform 0.1s, box-shadow 0.1s;
 }
 .menu-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--vinho); }
-/* Vibração some onde o aparelho não vibra (iPhone no navegador). */
-.menu-btn[hidden] { display: none; }
 
-.menu-lang {
-    border: 4px solid var(--vinho);
-    border-radius: 20px;
-    padding: 12px 15px;
-    background: #fff;
+/* Botão com o valor atual à direita (Idioma: 🇧🇷 Português). */
+.menu-btn-valor { justify-content: space-between; }
+.menu-valor {
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 0.95rem;
+    white-space: nowrap;
 }
-.menu-lang .lang-label {
-    font-family: var(--font-display);
-    font-size: 1.3rem;
-    color: var(--vinho);
-    margin-bottom: 8px;
+
+/* ── Janelas abertas pelo menu (idioma e feedback) ──
+   Ficam acima da gaveta (z-index 1200). */
+.confirma.sobre-menu { z-index: 1300; }
+
+.idiomas-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0 16px;
 }
-.lang-row { display: flex; gap: 8px; }
 .lang-opt {
-    flex: 1;
-    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 11px 14px;
     border: 3px solid var(--vinho);
-    border-radius: 14px;
+    border-radius: 16px;
     background: #fff;
     color: var(--vinho);
     font-family: var(--font-body);
     font-weight: 800;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
+    text-align: left;
     cursor: pointer;
     transition: background 0.15s;
 }
+.lang-opt .bandeira { font-size: 1.4rem; line-height: 1; }
+.lang-opt .nome { flex: 1; }
 .lang-opt.active { background: var(--accent); }
+/* Estrela no idioma escolhido, como nos itens selecionados do jogo. */
+.lang-opt.active::after { content: '★'; font-size: 1.2rem; }
+.lang-opt:active { transform: translateY(2px); }
+#idiomas-fechar { width: 100%; font-size: 1.3rem; padding: 11px 8px; }
+
+/* Feedback: alinhado no topo para o teclado do celular não cobrir os botões. */
+#feedback { align-items: flex-start; padding-top: calc(env(safe-area-inset-top) + 40px); overflow-y: auto; }
+.feedback-msg {
+    display: block;
+    width: 100%;
+    min-height: 120px;
+    margin: -6px 0 14px;
+    padding: 12px 14px;
+    border: 3px solid var(--vinho);
+    border-radius: 16px;
+    background: #fff;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 16px;            /* 16px: o iPhone não dá zoom ao focar */
+    line-height: 1.4;
+    resize: vertical;
+}
+.feedback-msg:focus { outline: none; box-shadow: 0 0 0 3px var(--accent); }
+.feedback-msg::placeholder { color: var(--vinho-fraco); }
+.confirma-botoes a.btn { text-decoration: none; display: flex; align-items: center; justify-content: center; }
+.confirma-caixa p.feedback-email {
+    margin: 14px 0 0;
+    font-size: 0.85rem;
+    word-break: break-word;
+}
+.feedback-email a { color: var(--vinho); font-weight: 800; }
 
 .menu-home { margin-top: auto; }
 

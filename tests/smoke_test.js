@@ -58,9 +58,9 @@ const check = (cond, msg) => { if (cond) { pass++; console.log('  ✓', msg); } 
     check(activeScreen() === 'screen-mode-select', 'splash → seleção de modo');
 
     console.log('— Troca de idioma —');
-    document.querySelector('.lang-opt[data-lang="en"]').click();
+    $('menu-lang-btn').click(); document.querySelector('.lang-opt[data-lang="en"]').click();
     check($('btn-mode-offline').innerText.includes('Pass & Play'), 'EN aplicado em botão');
-    document.querySelector('.lang-opt[data-lang="pt"]').click();
+    $('menu-lang-btn').click(); document.querySelector('.lang-opt[data-lang="pt"]').click();
     check(document.documentElement.lang === 'pt-BR', 'volta para PT');
 
     console.log('— Setup de jogadores —');
@@ -173,11 +173,11 @@ const check = (cond, msg) => { if (cond) { pass++; console.log('  ✓', msg); } 
     check($('tutorial-content').innerHTML.includes('duelo'), 'tutorial do Revólver (via botão i)');
     window.closeTutorial();
 
-    document.querySelector('.lang-opt[data-lang="en"]').click();
+    $('menu-lang-btn').click(); document.querySelector('.lang-opt[data-lang="en"]').click();
     window.showTutorial('GENERAL');
     check($('tutorial-content').innerHTML.includes('social deduction'), 'tutorial GENERAL em inglês');
     window.closeTutorial();
-    document.querySelector('.lang-opt[data-lang="pt"]').click();
+    $('menu-lang-btn').click(); document.querySelector('.lang-opt[data-lang="pt"]').click();
 
     console.log(`\nRESULTADO: ${pass} ✓ / ${fail} ✗`);
     process.exit(fail ? 1 : 0);

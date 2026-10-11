@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Saloon</title>
     <meta name="description" content="Jogo de dedução social para 5 a 10 pessoas, em um único aparelho.">
-    <link rel="stylesheet" href="style.css?v=muiwwybp">
-    <link rel="stylesheet" href="web.css?v=muiwwybp">
+    <link rel="stylesheet" href="style.css?v=mfbk1011">
+    <link rel="stylesheet" href="web.css?v=mfbk1011">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="images/icon.png">
     <link rel="apple-touch-icon" href="images/icon.png">
@@ -47,16 +47,12 @@
         <h2 data-i18n="menu">Saloon</h2>
 
         <button id="menu-sound-btn" class="menu-btn" data-i18n="sound_on">Som ativado</button>
-        <button id="menu-vibra-btn" class="menu-btn" data-i18n="vibration_on">Vibração ativada</button>
+        <button id="menu-lang-btn" class="menu-btn menu-btn-valor" aria-haspopup="dialog">
+            <span data-i18n="language">Idioma</span>
+            <span id="menu-lang-atual" class="menu-valor">🇧🇷 Português</span>
+        </button>
         <button id="menu-tutorial-btn" class="menu-btn" data-i18n="how_to_play">Como jogar</button>
-
-        <div class="menu-lang">
-            <div class="lang-label" data-i18n="language">Idioma</div>
-            <div class="lang-row">
-                <button class="lang-opt" data-lang="pt">🇧🇷 Português</button>
-                <button class="lang-opt" data-lang="en">🇺🇸 English</button>
-            </div>
-        </div>
+        <button id="menu-feedback-btn" class="menu-btn" data-i18n="feedback" aria-haspopup="dialog">Enviar feedback</button>
 
         <button id="menu-home-btn" class="menu-btn menu-home" data-i18n="home_screen">Tela inicial</button>
     </div>
@@ -369,6 +365,30 @@
                 <button type="button" id="confirma-nao" class="btn btn-ghost"></button>
                 <button type="button" id="confirma-sim" class="btn btn-primary"></button>
             </div>
+        </div>
+    </div>
+
+    <!-- Escolha de idioma (botão "Idioma" do menu). Os botões são montados
+         em app.js a partir da lista IDIOMAS do i18n.js. -->
+    <div id="idiomas" class="confirma sobre-menu hidden" role="dialog" aria-modal="true" aria-labelledby="idiomas-titulo">
+        <div class="confirma-caixa">
+            <h3 id="idiomas-titulo" data-i18n="language">Idioma</h3>
+            <div id="idiomas-lista" class="idiomas-lista"></div>
+            <button type="button" id="idiomas-fechar" class="btn btn-ghost" data-i18n="close">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Feedback: o texto vai pronto para o app de e-mail do aparelho. -->
+    <div id="feedback" class="confirma sobre-menu hidden" role="dialog" aria-modal="true" aria-labelledby="feedback-titulo">
+        <div class="confirma-caixa">
+            <h3 id="feedback-titulo" data-i18n="feedback_title">Seu feedback</h3>
+            <p data-i18n="feedback_text">Tem uma ideia, achou um problema ou quer elogiar? Escreva aqui que a mensagem chega direto para nós.</p>
+            <textarea id="feedback-msg" class="feedback-msg" rows="5" maxlength="2000" data-i18n-placeholder="feedback_ph"></textarea>
+            <div class="confirma-botoes">
+                <button type="button" id="feedback-cancelar" class="btn btn-ghost" data-i18n="cancel">Cancelar</button>
+                <a id="feedback-enviar" class="btn btn-primary" href="#" data-i18n="feedback_send">Enviar</a>
+            </div>
+            <p class="feedback-email"><span data-i18n="feedback_or">Ou escreva para</span> <a id="feedback-email"></a></p>
         </div>
     </div>
 
@@ -741,13 +761,13 @@
     });
     const db = firebase.database();
 </script>
-<script src="i18n.js?v=muiwwybp"></script>
-<script src="i18n-web.js?v=muiwwybp"></script>
-<script src="art.js?v=muiwwybp"></script>
-<script src="fx.js?v=muiwwybp"></script>
-<script src="app.js?v=muiwwybp"></script>
-<script src="qrcode.js?v=muiwwybp"></script>
-<script src="online.js?v=muiwwybp"></script>
-<script src="screen.js?v=muiwwybp"></script>
+<script src="i18n.js?v=mfbk1011"></script>
+<script src="i18n-web.js?v=mfbk1011"></script>
+<script src="art.js?v=mfbk1011"></script>
+<script src="fx.js?v=mfbk1011"></script>
+<script src="app.js?v=mfbk1011"></script>
+<script src="qrcode.js?v=mfbk1011"></script>
+<script src="online.js?v=mfbk1011"></script>
+<script src="screen.js?v=mfbk1011"></script>
 </body>
 </html>
