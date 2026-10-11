@@ -1005,11 +1005,14 @@ body.scene-mode #btn-hamburger { display: none !important; }
 }
 .menu-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--vinho); }
 
-/* Ícone de cada item: mesmo traço vinho do botão de cartas. */
+/* Ícone de cada item: mesmo traço vinho do botão de cartas. O traço fica
+   só nos ícones desenhados (svg); a bandeira mantém as próprias cores. */
 .menu-icone {
     flex: none;
     width: 30px;
     height: 30px;
+}
+svg.menu-icone {
     fill: none;
     stroke: var(--vinho);
     stroke-width: 2.2;
@@ -1027,6 +1030,7 @@ body.scene-mode #btn-hamburger { display: none !important; }
 /* Bandeira em SVG (menu e lista de idiomas). */
 svg.bandeira {
     display: block;
+    stroke: none;
     width: 30px;
     height: 20px;
     border-radius: 4px;
@@ -1089,7 +1093,7 @@ svg.bandeira {
 }
 .feedback-msg:focus { outline: none; box-shadow: 0 0 0 3px var(--accent); }
 .feedback-msg::placeholder { color: var(--vinho-fraco); }
-.confirma-botoes a.btn { text-decoration: none; display: flex; align-items: center; justify-content: center; }
+.confirma-botoes a.btn { text-decoration: none; display: flex; align-items: center; justify-content: center; line-height: normal; }
 .confirma-caixa p.feedback-email {
     margin: 14px 0 0;
     font-size: 0.85rem;

@@ -318,25 +318,37 @@ const EscolhaIdioma = {
 // site e no app do iPhone sem servidor nenhum.
 const FEEDBACK_EMAIL = 'victorcostv@gmail.com';
 
+// O texto digitado fica guardado até ir para o e-mail: fechar a janela
+// (Cancelar, ou tocar fora para baixar o teclado) não apaga o rascunho.
 const Feedback = {
     abrir() {
-        document.getElementById('feedback-msg').value = '';
         document.getElementById('feedback').classList.remove('hidden');
     },
 
     fechar() {
         document.getElementById('feedback').classList.add('hidden');
-        window.removeEventListener('blur', this._saiu);
-        document.removeEventListener('visibilitychange', this._saiu);
+        this._esquece();
     },
 
-    // A janela só fecha quando o app de e-mail abre por cima. Sem app de
-    // e-mail (comum no computador), ela fica com o texto e o endereço.
+    // A janela só fecha quando o app de e-mail abre por cima, logo depois
+    // do toque. Sem app de e-mail (comum no computador), ela fica com o
+    // texto e o endereço, e um clique em outra janela depois não a fecha.
     enviar(link) {
         link.href = this.link();
-        this._saiu = this._saiu || (() => this.fechar());
+        this._saiu = this._saiu || (() => {
+            document.getElementById('feedback-msg').value = '';
+            this.fechar();
+        });
         window.addEventListener('blur', this._saiu, { once: true });
         document.addEventListener('visibilitychange', this._saiu, { once: true });
+        clearTimeout(this._prazo);
+        this._prazo = setTimeout(() => this._esquece(), 1500);
+    },
+
+    _esquece() {
+        clearTimeout(this._prazo);
+        window.removeEventListener('blur', this._saiu);
+        document.removeEventListener('visibilitychange', this._saiu);
     },
 
     link() {
@@ -519,8 +531,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // O link é montado no toque: o app de e-mail abre com o texto já escrito.
     document.getElementById('feedback-enviar').onclick = (e) => Feedback.enviar(e.currentTarget);
     document.getElementById('feedback-cancelar').onclick = () => Feedback.fechar();
+    // Tocar fora fecha só a janela vazia: com texto, quem toca fora quase
+    // sempre quer só baixar o teclado.
     document.getElementById('feedback').onclick = (e) => {
-        if (e.target.id === 'feedback') Feedback.fechar();
+        if (e.target.id === 'feedback' && !document.getElementById('feedback-msg').value.trim()) Feedback.fechar();
     };
 
     document.getElementById('menu-home-btn').onclick = async () => {

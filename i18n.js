@@ -301,7 +301,7 @@ const I18N = {
         role_falsificador: 'Forger',
         escrivao_desc1: 'One of these is the real Marshal. The other is an impostor. Figure out who to trust.',
         escrivao_title: 'Marshal or Forger?',
-        falsificador_desc2: 'But poses as the authority.',
+        falsificador_desc2: 'But you pose as the authority.',
         falsificador_notice: 'You appear as a possible <b>Marshal</b> to the Clerk. In the duel, you look like the <b>Law</b>.',
         law_desc1: 'Help the Sheriff on missions and find out who the outlaws are.',
         law_desc2: 'You must complete every mission you join.',
@@ -513,7 +513,7 @@ const I18N = {
         role_falsificador: 'Falsificador',
         escrivao_desc1: 'Uno de estos es el Alguacil de verdad. El otro es un impostor. Descubre en quién confiar.',
         escrivao_title: '¿Alguacil o Falsificador?',
-        falsificador_desc2: 'Pero se hace pasar por la autoridad.',
+        falsificador_desc2: 'Pero te haces pasar por la autoridad.',
         falsificador_notice: 'El Escribano te ve como posible <b>Alguacil</b>. En el duelo, pareces de la <b>Ley</b>.',
         law_desc1: 'Ayuda al Sheriff en las misiones y descubre quiénes son los forajidos.',
         law_desc2: 'Debes cumplir todas las misiones en las que participes.',
@@ -575,7 +575,7 @@ const I18N = {
         duel_started_you: 'Tú iniciaste el duelo',
         duel_challenged: '¡Te desafiaron!',
         law_resistance: 'LA LEY',
-        outlaw_team: 'FORAJIDO',
+        outlaw_team: 'LOS FORAJIDOS',
 
         boss_last_chance: 'Última oportunidad del Jefe',
         boss_text: 'La Ley cumplió 3 misiones, pero al Jefe de la Banda le queda una última bala. Jefe, toma el teléfono e intenta acertarle al Alguacil.',
@@ -629,8 +629,8 @@ const I18N = {
                 </div>
                 <div class="card">
                     <h2>El disfraz del Falsificador</h2>
-                    <p>Es un <strong>forajido común</strong>: conoce a los demás bandidos y <strong>puede sabotear</strong>. El <strong>Alguacil no lo ve</strong>, así que puede mentir con libertad. En el <strong>duelo</strong>, aparece como de la <strong>Ley</strong>.</p>
-                    <div class="alerta"><span class="bang">!</span><span>Con la Farsante activa, el Alguacil pasa a <strong>ver al Jefe</strong>, y quien desaparece de su vista es el <strong>Falsificador</strong>. Siempre son personas distintas.</span></div>
+                    <p>Es un <strong>forajido común</strong>: conoce a los demás bandidos y <strong>puede sabotear</strong>. El <strong>Alguacil no lo ve</strong>, así que puede mentir con libertad. En el <strong>duelo</strong>, parece de la <strong>Ley</strong>.</p>
+                    <div class="alerta"><span class="bang">!</span><span>Con la Farsante activa, el Alguacil ahora <strong>ve al Jefe</strong>, y quien desaparece de su vista es el <strong>Falsificador</strong>. Siempre son personas distintas.</span></div>
                 </div>`,
             GENERAL: `
                 <p class="tut-sub"><strong>Saloon</strong> es un juego de deducción social para 5 a 10 jugadores. Confía en quien lo merece.</p>
@@ -642,7 +642,7 @@ const I18N = {
                 </div>
                 <div class="card">
                     <h2>Objetivo: 3 fichas</h2>
-                    <p>La partida tiene hasta <strong>5 misiones</strong>. Quien consiga <strong>3 fichas</strong> primero, gana.</p>
+                    <p>La partida tiene hasta <strong>5 misiones</strong>. Quien consiga primero <strong>3 fichas</strong> gana.</p>
                     <div class="chips-row" data-fichas="lei:2 lei:3 fora:2 3! 3"></div>
                     <div class="chip-legenda">
                         <i><span class="dot" style="background:var(--law)"></span>misión cumplida</i>
@@ -677,7 +677,7 @@ const I18N = {
     fr: {
         tap_start: 'Touchez pour entrer dans le saloon',
 
-        setup_title: 'Notez les joueurs<br>dans l’ordre où ils sont assis :',
+        setup_title: 'Notez les joueurs<br>dans l’ordre où ils sont assis :',
         name_ph: 'Nom du joueur',
         next: 'Suivant',
         how_to_play: 'Comment jouer',
@@ -689,13 +689,13 @@ const I18N = {
         extra_revolver_sub: 'Revolver chargé',
         extra_farsante: 'Imposture',
         extra_farsante_sub: 'Greffier et Faussaire',
-        farsante_req: 'Nécessite Insigne',
-        confirm: 'Ouvrir la table !',
+        farsante_req: 'Nécessite l’Insigne',
+        confirm: 'Ouvrir la table !',
         min_players: 'Il faut au moins 5 joueurs pour commencer.',
         max_players: 'Maximum de 10 joueurs atteint.',
         name_exists: 'Ce nom existe déjà.',
         close: 'Fermer',
-        leave_game_title: 'Quitter la partie ?',
+        leave_game_title: 'Quitter la partie ?',
         leave_game_text: 'La partie en cours sera perdue.',
         leave_game_yes: 'Quitter',
         leave_game_no: 'Continuer',
@@ -723,8 +723,8 @@ const I18N = {
         role_escrivao: 'Greffier',
         role_falsificador: 'Faussaire',
         escrivao_desc1: 'L’un d’eux est le vrai Marshal. L’autre est un imposteur. À vous de savoir à qui faire confiance.',
-        escrivao_title: 'Marshal ou Faussaire ?',
-        falsificador_desc2: 'Mais se fait passer pour l’autorité.',
+        escrivao_title: 'Marshal ou Faussaire ?',
+        falsificador_desc2: 'Mais vous vous faites passer pour l’autorité.',
         falsificador_notice: 'Le Greffier vous voit comme un <b>Marshal</b> possible. En duel, vous semblez être de la <b>Loi</b>.',
         law_desc1: 'Aidez le Shérif pendant les missions et démasquez les hors-la-loi.',
         law_desc2: 'Vous devez accomplir toutes les missions auxquelles vous participez.',
@@ -732,16 +732,16 @@ const I18N = {
         outlaw_desc2: 'Sabotez (ou non) les missions sans vous faire remarquer.',
         boss_desc2: 'Sabotez (ou non) les missions sans vous faire remarquer, et trouvez le marshal.',
 
-        rejected_teams: 'Équipes rejetées :',
-        current_sheriff: 'Shérif de la manche :',
+        rejected_teams: 'Équipes rejetées :',
+        current_sheriff: 'Shérif de la manche :',
         sheriff_must: 'Le shérif doit former une équipe de <strong id="mission-size-req" class="neon-text">X</strong> joueurs pour la Mission <span id="current-mission-num">1</span>.',
-        select_team: 'Choisissez l’équipe :',
+        select_team: 'Choisissez l’équipe :',
         propose_team: 'Proposer l’équipe',
         two_fails: '2 sabotages',
 
-        team_vote_title: 'Vote de l’équipe',
+        team_vote_title: 'Vote sur l’équipe',
         proposed_by: 'Équipe proposée par',
-        voting_rules: '<p><strong>Le vote se fait en groupe, maintenant !</strong> Tout le monde vote en même temps, les yeux fermés (pouce levé = approuver, pouce baissé = rejeter).</p><p>Pour que la mission parte, il faut au moins <strong id="majority-number" class="destaque">X</strong> votes pour.</p>',
+        voting_rules: '<p><strong>Le vote se fait en groupe, maintenant !</strong> Tout le monde vote en même temps, les yeux fermés (pouce levé = approuver, pouce baissé = rejeter).</p><p>Pour que la mission parte, il faut au moins <strong id="majority-number" class="destaque">X</strong> votes pour.</p>',
         vote_yes_group: 'La majorité a APPROUVÉ',
         vote_no_group: 'La majorité a REJETÉ',
 
@@ -750,21 +750,21 @@ const I18N = {
         chip_sabotar: 'Saboter',
         law_only: 'Les membres de la Loi peuvent SEULEMENT accomplir.',
         mission_result_title: 'Résultat de la mission',
-        mission_chips_sub: 'Un jeton par membre de l’équipe :',
-        sabotages: 'Sabotages :',
+        mission_chips_sub: 'Un jeton par membre de l’équipe :',
+        sabotages: 'Sabotages :',
         next_phase: 'Phase suivante',
-        mission_success_t: 'Mission accomplie !',
-        mission_fail_t: 'Mission sabotée !',
+        mission_success_t: 'Mission accomplie !',
+        mission_fail_t: 'Mission sabotée !',
         mission_success_lore: 'L’opération à Red Rock est un succès.',
         needed_two_fails: 'Il y a eu 1 sabotage, mais cette mission n’échouait qu’avec 2.',
-        mission_fail_lore: 'Il y avait des infiltrés dans l’équipe et l’opération a échoué !',
+        mission_fail_lore: 'Il y avait des infiltrés dans l’équipe et l’opération a échoué !',
 
         duel_time: 'L’heure du duel',
         duel_owner_has: '{name} a le revolver.',
-        duel_choose: 'Choisissez quelqu’un à défier :',
+        duel_choose: 'Choisissez quelqu’un à défier :',
         challenge: 'Défier',
         skip_duel: 'Passer le duel',
-        duel_hold: 'Tenez bon. Comment réagissez-vous dans ce duel ?',
+        duel_hold: 'Tenez bon. Comment réagissez-vous dans ce duel ?',
         shoot: 'TIRER',
         lower_gun: 'BAISSER L’ARME',
         dust_settling: 'La poussière retombe...',
@@ -777,14 +777,14 @@ const I18N = {
         see_result: 'Voir le résultat',
         duel_result_title: 'Résultat du duel',
         continue_game: 'Continuer la partie',
-        duel_both_shot: 'Les deux ont tiré !<br>Heureusement, ils se sont ratés.',
+        duel_both_shot: 'Les deux ont tiré !<br>Heureusement, ils se sont ratés.',
         duel_both_down: 'Les deux ont baissé leur arme.<br>La paix, pour l’instant.',
         duel_mixed: 'L’un a tiré, l’autre a baissé son arme.<br>L’un des deux a joué un sale tour.',
         intimidation_title: 'Intimidation réussie',
-        belongs_team: 'Le joueur <strong id="intimidated-name">NOM</strong> appartient au camp :',
+        belongs_team: 'Le joueur <strong id="intimidated-name">NOM</strong> appartient au camp :',
         understood_hide: 'Compris, cacher',
         duel_started_you: 'Vous avez lancé le duel',
-        duel_challenged: 'Vous avez été défié !',
+        duel_challenged: 'Vous avez été défié !',
         law_resistance: 'LA LOI',
         outlaw_team: 'HORS-LA-LOI',
 
@@ -801,14 +801,14 @@ const I18N = {
         tag_delegado: ' (MARSHAL)',
         tag_escrivao: ' (GREFFIER)',
         tag_falsificador: ' (FAUSSAIRE)',
-        win_outlaw_rejects: 'Victoire des Hors-la-loi ! La ville a rejeté 5 équipes d’affilée.',
-        win_law_missions: 'Victoire de la Loi ! La ville de Red Rock est sauvée.',
-        win_outlaw_missions: 'Victoire des Hors-la-loi ! Red Rock est tombée.',
-        win_boss_shot: 'BANG ! Le Chef de Gang a abattu le Marshal avant de s’enfuir ! Victoire des Hors-la-loi !',
-        win_boss_missed: 'Le Chef a tiré sur la mauvaise personne. La ville les a tous exécutés ! Victoire incontestable de la Loi !',
+        win_outlaw_rejects: 'Victoire des Hors-la-loi ! La ville a rejeté 5 équipes d’affilée.',
+        win_law_missions: 'Victoire de la Loi ! La ville de Red Rock est sauvée.',
+        win_outlaw_missions: 'Victoire des Hors-la-loi ! Red Rock est tombée.',
+        win_boss_shot: 'BANG ! Le Chef de Gang a abattu le Marshal avant de s’enfuir ! Victoire des Hors-la-loi !',
+        win_boss_missed: 'Le Chef a tiré sur la mauvaise personne. La ville les a tous exécutés ! Victoire incontestable de la Loi !',
 
         secret_choice: 'Votre choix est SECRET. Personne ne verra votre décision.',
-        choice_registered_short: 'Choix enregistré !',
+        choice_registered_short: 'Choix enregistré !',
         pass_phone: 'Passer le téléphone',
 
         menu: 'Saloon',
@@ -820,7 +820,7 @@ const I18N = {
         cancel: 'Annuler',
         feedback: 'Envoyer un avis',
         feedback_title: 'Votre avis',
-        feedback_text: 'Une idée, un problème ou un compliment ? Écrivez-le ici, il arrive directement dans notre boîte mail.',
+        feedback_text: 'Une idée, un problème ou un compliment ? Écrivez-le ici, il arrive directement dans notre boîte mail.',
         feedback_ph: 'Écrivez votre message...',
         feedback_send: 'Envoyer',
         feedback_or: 'Ou écrivez à',
@@ -828,7 +828,7 @@ const I18N = {
 
         tutorials: {
             FARSANTE: `
-                <p class="tut-sub">Qui est le vrai informateur de la Loi ? Deux nouveaux personnages arrivent, et l’un d’eux n’est qu’une façade.</p>
+                <p class="tut-sub">Qui est le vrai informateur de la Loi ? Deux nouveaux personnages arrivent, et l’un d’eux n’est qu’une façade.</p>
                 <div class="card">
                     <h2>Les deux nouveaux rôles</h2>
                     <div class="teams"><div class="mini-card" data-papel="ESCRIVAO"><span class="nome">Greffier</span><span class="meta">Camp de la Loi. Voit deux noms, sans savoir lequel est le Marshal.</span></div><div class="mini-card" data-papel="FALSIFICADOR"><span class="nome">Faussaire</span><span class="meta">Hors-la-loi. Se fait passer pour l’autorité.</span></div></div>
@@ -836,11 +836,11 @@ const I18N = {
                 </div>
                 <div class="card">
                     <h2>Le dilemme du Greffier</h2>
-                    <p>Le Greffier voit <strong>deux noms</strong> : l’un est le vrai <strong>Marshal</strong>, l’autre est le <strong>Faussaire</strong> déguisé. Mais il <strong>ne sait pas qui est qui</strong> et doit deviner à qui faire confiance.</p>
+                    <p>Le Greffier voit <strong>deux noms</strong> : l’un est le vrai <strong>Marshal</strong>, l’autre est le <strong>Faussaire</strong> déguisé. Mais il <strong>ne sait pas qui est qui</strong> et doit deviner à qui faire confiance.</p>
                 </div>
                 <div class="card">
                     <h2>Le déguisement du Faussaire</h2>
-                    <p>C’est un <strong>hors-la-loi ordinaire</strong> : il connaît les autres bandits et <strong>peut saboter</strong>. Le <strong>Marshal ne le voit pas</strong>, il peut donc bluffer librement. En <strong>duel</strong>, il apparaît comme membre de la <strong>Loi</strong>.</p>
+                    <p>C’est un <strong>hors-la-loi ordinaire</strong> : il connaît les autres bandits et <strong>peut saboter</strong>. Le <strong>Marshal ne le voit pas</strong>, il peut donc bluffer librement. En <strong>duel</strong>, il apparaît comme membre de la <strong>Loi</strong>.</p>
                     <div class="alerta"><span class="bang">!</span><span>Avec l’Imposture activée, le Marshal <strong>voit le Chef</strong>, et c’est le <strong>Faussaire</strong> qui lui échappe. Ce sont toujours deux personnes différentes.</span></div>
                 </div>`,
             GENERAL: `
@@ -852,7 +852,7 @@ const I18N = {
                     <p>La Loi gagne en accomplissant des missions. Les Hors-la-loi gagnent en sabotant sans se faire prendre.</p>
                 </div>
                 <div class="card">
-                    <h2>Objectif : 3 jetons</h2>
+                    <h2>Objectif : 3 jetons</h2>
                     <p>Une partie compte jusqu’à <strong>5 missions</strong>. Le premier camp à remporter <strong>3 jetons</strong> gagne.</p>
                     <div class="chips-row" data-fichas="lei:2 lei:3 fora:2 3! 3"></div>
                     <div class="chip-legenda">
@@ -863,23 +863,23 @@ const I18N = {
                 </div>
                 <div class="card">
                     <h2>La manche, étape par étape</h2>
-                    <div class="trilha"><div class="passo"><div class="num"><span>1</span></div><h3>Le Shérif forme l’équipe</h3><p>Un joueur est le <strong>Shérif</strong> de la manche. Il choisit qui part en mission (le chiffre sur le jeton). Le rôle tourne à chaque manche.</p></div><div class="passo"><div class="num"><span>2</span></div><h3>Tout le monde vote l’équipe</h3><p><strong>Tout le monde</strong> vote oui ou non, même ceux qui restent dehors. La majorité simple approuve et la mission commence.</p><p>Rejetée ? L’étoile de Shérif passe au joueur suivant, qui propose une autre équipe.</p></div><div class="passo"><div class="num"><span>3</span></div><h3>La mission est secrète</h3><p>Chaque joueur choisi décide sur le téléphone, en cachette : <strong>accomplir</strong> ou <strong>saboter</strong>.</p><p>Les membres de la Loi <strong>ne peuvent qu’accomplir</strong>. Le Hors-la-loi choisit : saboter aide son camp, mais éveille les soupçons.</p></div><div class="passo"><div class="num"><span>4</span></div><h3>Le résultat devient un jeton</h3><p>Les votes de la mission sont révélés ensemble, sans dire qui a voté quoi. <strong>Un seul sabotage</strong> suffit à faire échouer la mission, et le jeton devient rouge.</p></div></div>
-                    <div class="alerta"><span class="bang">!</span><span><strong>5 équipes rejetées d’affilée</strong> = la ville s’effondre. Victoire immédiate des Hors-la-loi. Ne laissez pas le vote s’enliser !</span></div>
-                    <div class="nota">Aux grandes tables, certaines missions demandent <strong>2 sabotages</strong> pour échouer : le jeton l’indique avec « 2 sabotages ».</div>
+                    <div class="trilha"><div class="passo"><div class="num"><span>1</span></div><h3>Le Shérif forme l’équipe</h3><p>Un joueur est le <strong>Shérif</strong> de la manche. Il choisit qui part en mission (le chiffre sur le jeton). Le rôle tourne à chaque manche.</p></div><div class="passo"><div class="num"><span>2</span></div><h3>Tout le monde vote sur l’équipe</h3><p><strong>Tout le monde</strong> vote oui ou non, même ceux qui ne font pas partie de l’équipe. Si la majorité simple approuve, la mission commence.</p><p>Rejetée ? L’étoile de Shérif passe au joueur suivant, qui propose une autre équipe.</p></div><div class="passo"><div class="num"><span>3</span></div><h3>La mission est secrète</h3><p>Chaque joueur choisi décide sur le téléphone, en cachette : <strong>accomplir</strong> ou <strong>saboter</strong>.</p><p>Les membres de la Loi <strong>ne peuvent qu’accomplir</strong>. Le Hors-la-loi choisit : saboter aide son camp, mais éveille les soupçons.</p></div><div class="passo"><div class="num"><span>4</span></div><h3>Le résultat devient un jeton</h3><p>Les votes de la mission sont révélés ensemble, sans dire qui a voté quoi. <strong>Un seul sabotage</strong> suffit à faire échouer la mission, et le jeton devient rouge.</p></div></div>
+                    <div class="alerta"><span class="bang">!</span><span><strong>5 équipes rejetées d’affilée</strong> = la ville s’effondre. Victoire immédiate des Hors-la-loi. Ne laissez pas le vote s’enliser !</span></div>
+                    <div class="nota">Aux grandes tables, certaines missions demandent <strong>2 sabotages</strong> pour échouer : le jeton l’indique avec « 2 sabotages ».</div>
                 </div>`,
             DELEGADO: `
                 <div class="card">
                     <h2>Marshal et Chef</h2>
                     <p>Deux personnages spéciaux entrent dans le paquet, un pour chaque camp.</p>
                     <div class="teams"><div class="mini-card" data-papel="DELEGADO"><span class="nome">Marshal</span><span class="meta">Camp de la Loi. Sait dès le départ qui sont les Hors-la-loi.</span></div><div class="mini-card" data-papel="BOSS"><span class="nome">Chef de Gang</span><span class="meta">Le seul bandit que le Marshal NE connaît PAS.</span></div></div>
-                    <p>Le Marshal doit utiliser ce qu’il sait avec <strong>prudence</strong> : s’il se dévoile trop, il devient une cible.</p>
-                    <div class="alerta"><span class="bang">!</span><span>Si la Loi gagne les 3 missions, le Chef a <strong>une dernière balle</strong> : deviner qui est le Marshal. S’il vise juste, les Hors-la-loi <strong>volent la victoire</strong>.</span></div>
+                    <p>Le Marshal doit utiliser ce qu’il sait avec <strong>prudence</strong> : s’il se dévoile trop, il devient une cible.</p>
+                    <div class="alerta"><span class="bang">!</span><span>Si la Loi gagne les 3 missions, le Chef a <strong>une dernière balle</strong> : deviner qui est le Marshal. S’il vise juste, les Hors-la-loi <strong>volent la victoire</strong>.</span></div>
                 </div>`,
             REVOLVER: `
                 <div class="card">
                     <h2><img class="tut-h2-img" src="images/revolver.png" alt=""> Revolver et duel</h2>
-                    <p>Un joueur commence avec le <strong>revolver</strong>. Après les missions 2 et 3, il peut défier quelqu’un dans un <strong>duel de regards</strong> (ou passer).</p>
-                    <p>Pendant le duel, les deux choisissent en secret : <strong>tirer</strong> ou <strong>baisser l’arme</strong>.</p>
+                    <p>Un joueur commence avec le <strong>revolver</strong>. Après les missions 2 et 3, il peut défier quelqu’un en <strong>duel de regards</strong> (ou passer).</p>
+                    <p>Pendant le duel, les deux choisissent en secret : <strong>tirer</strong> ou <strong>baisser l’arme</strong>.</p>
                     <div class="nota">S’ils choisissent <strong>la même chose</strong>, le propriétaire du revolver découvre le <strong>camp</strong> de l’adversaire, en secret. S’ils choisissent différemment, seule la tension reste dans l’air.</div>
                     <p style="margin-top:10px">Après le duel, le revolver passe au joueur défié (sans retour immédiat).</p>
                 </div>`
@@ -903,7 +903,7 @@ const I18N = {
         farsante_req: 'Benötigt Abzeichen',
         confirm: 'Tisch eröffnen!',
         min_players: 'Zum Starten braucht ihr mindestens 5 Spieler.',
-        max_players: 'Maximal 10 Spieler erreicht.',
+        max_players: 'Höchstzahl von 10 Spielern erreicht.',
         name_exists: 'Diesen Namen gibt es schon.',
         close: 'Schließen',
         leave_game_title: 'Partie verlassen?',
@@ -935,7 +935,7 @@ const I18N = {
         role_falsificador: 'Fälscher',
         escrivao_desc1: 'Einer der beiden ist der echte Marshal. Der andere ist ein Betrüger. Finde heraus, wem du trauen kannst.',
         escrivao_title: 'Marshal oder Fälscher?',
-        falsificador_desc2: 'Gibt sich aber als Autorität aus.',
+        falsificador_desc2: 'Aber du gibst dich als Autorität aus.',
         falsificador_notice: 'Für den Schreiber bist du ein möglicher <b>Marshal</b>. Im Duell wirkst du wie das <b>Gesetz</b>.',
         law_desc1: 'Hilf dem Sheriff bei den Missionen und finde heraus, wer die Gesetzlosen sind.',
         law_desc2: 'Du musst jede Mission erfüllen, an der du teilnimmst.',
@@ -953,8 +953,8 @@ const I18N = {
         team_vote_title: 'Abstimmung',
         proposed_by: 'Team vorgeschlagen von',
         voting_rules: '<p><strong>Abgestimmt wird gemeinsam, jetzt!</strong> Alle stimmen gleichzeitig mit geschlossenen Augen ab (Daumen hoch = annehmen, Daumen runter = ablehnen).</p><p>Damit die Mission startet, braucht es mindestens <strong id="majority-number" class="destaque">X</strong> Ja-Stimmen.</p>',
-        vote_yes_group: 'Mehrheit ANGENOMMEN',
-        vote_no_group: 'Mehrheit ABGELEHNT',
+        vote_yes_group: 'Mehrheit DAFÜR',
+        vote_no_group: 'Mehrheit DAGEGEN',
 
         mission_exec: 'Mission ausführen',
         chip_cumprir: 'Erfüllen',
@@ -967,7 +967,7 @@ const I18N = {
         mission_success_t: 'Mission erfüllt!',
         mission_fail_t: 'Mission sabotiert!',
         mission_success_lore: 'Die Operation in Red Rock war ein Erfolg.',
-        needed_two_fails: 'Es gab 1 Sabotage, aber diese Mission scheiterte erst bei 2.',
+        needed_two_fails: 'Es gab 1 Sabotage, aber diese Mission scheitert erst bei 2.',
         mission_fail_lore: 'Im Team waren Verräter, und die Operation ist gescheitert!',
 
         duel_time: 'Zeit für ein Duell',
@@ -990,7 +990,7 @@ const I18N = {
         continue_game: 'Weiterspielen',
         duel_both_shot: 'Beide haben geschossen!<br>Zum Glück haben beide verfehlt.',
         duel_both_down: 'Beide haben die Waffe gesenkt.<br>Friede, vorerst.',
-        duel_mixed: 'Einer hat geschossen, der andere die Waffe gesenkt.<br>Einer der beiden hat falsch gespielt.',
+        duel_mixed: 'Einer hat geschossen, der andere die Waffe gesenkt.<br>Einer der beiden hat ein falsches Spiel getrieben.',
         intimidation_title: 'Einschüchterung gelungen',
         belongs_team: 'Spieler <strong id="intimidated-name">NAME</strong> gehört zu:',
         understood_hide: 'Verstanden, verdecken',
@@ -1052,10 +1052,10 @@ const I18N = {
                 <div class="card">
                     <h2>Die Tarnung des Fälschers</h2>
                     <p>Er ist ein <strong>gewöhnlicher Gesetzloser</strong>: Er kennt die anderen Banditen und <strong>kann sabotieren</strong>. Der <strong>Marshal sieht ihn nicht</strong>, also kann er frei bluffen. Im <strong>Duell</strong> erscheint er als <strong>Gesetzeshüter</strong>.</p>
-                    <div class="alerta"><span class="bang">!</span><span>Mit dem Hochstapler <strong>sieht der Marshal den Boss</strong>, und vor ihm verborgen bleibt der <strong>Fälscher</strong>. Die beiden sind immer verschiedene Personen.</span></div>
+                    <div class="alerta"><span class="bang">!</span><span>Ist „Hochstapler“ aktiv, <strong>sieht der Marshal den Boss</strong>, und vor ihm verborgen bleibt der <strong>Fälscher</strong>. Die beiden sind immer verschiedene Personen.</span></div>
                 </div>`,
             GENERAL: `
-                <p class="tut-sub"><strong>Saloon</strong> ist ein Spiel um soziale Deduktion für 5 bis 10 Spieler. Vertraue den Richtigen.</p>
+                <p class="tut-sub"><strong>Saloon</strong> ist ein Social-Deduction-Spiel für 5 bis 10 Spieler. Vertraue den Richtigen.</p>
                 <div class="card">
                     <h2>Zwei Teams, eine Stadt</h2>
                     <p>Zu Beginn bekommt jeder Spieler eine <strong>geheime</strong> Karte, die sein Team festlegt. Niemand sonst darf sie sehen.</p>
@@ -1074,7 +1074,7 @@ const I18N = {
                 </div>
                 <div class="card">
                     <h2>Die Runde, Schritt für Schritt</h2>
-                    <div class="trilha"><div class="passo"><div class="num"><span>1</span></div><h3>Der Sheriff stellt das Team auf</h3><p>Ein Spieler ist der <strong>Sheriff</strong> der Runde. Er wählt, wer auf die Mission geht (die Zahl auf dem Chip). Das Amt wechselt jede Runde.</p></div><div class="passo"><div class="num"><span>2</span></div><h3>Alle stimmen über das Team ab</h3><p><strong>Alle</strong> stimmen mit Ja oder Nein, auch wer nicht im Team ist. Die einfache Mehrheit entscheidet, und die Mission beginnt.</p><p>Abgelehnt? Das Sheriff-Amt geht an den nächsten Spieler, der ein anderes Team vorschlägt.</p></div><div class="passo"><div class="num"><span>3</span></div><h3>Die Mission ist geheim</h3><p>Jeder Ausgewählte entscheidet verdeckt am Handy: <strong>erfüllen</strong> oder <strong>sabotieren</strong>.</p><p>Gesetzeshüter <strong>können nur erfüllen</strong>. Gesetzlose haben die Wahl: Sabotage hilft ihrem Team, weckt aber Verdacht.</p></div><div class="passo"><div class="num"><span>4</span></div><h3>Das Ergebnis wird zum Chip</h3><p>Die Missionsstimmen werden gemeinsam aufgedeckt, ohne zu verraten, von wem sie stammen. <strong>Eine einzige Sabotage</strong> lässt die Mission scheitern, und der Chip wird rot.</p></div></div>
+                    <div class="trilha"><div class="passo"><div class="num"><span>1</span></div><h3>Der Sheriff stellt das Team auf</h3><p>Ein Spieler ist der <strong>Sheriff</strong> der Runde. Er wählt, wer auf die Mission geht (die Zahl auf dem Chip). Das Amt wechselt jede Runde.</p></div><div class="passo"><div class="num"><span>2</span></div><h3>Alle stimmen über das Team ab</h3><p><strong>Alle</strong> stimmen mit Ja oder Nein, auch wer nicht im Team ist. Stimmt die einfache Mehrheit dafür, beginnt die Mission.</p><p>Abgelehnt? Das Sheriff-Amt geht an den nächsten Spieler, der ein anderes Team vorschlägt.</p></div><div class="passo"><div class="num"><span>3</span></div><h3>Die Mission ist geheim</h3><p>Jeder Ausgewählte entscheidet verdeckt am Handy: <strong>erfüllen</strong> oder <strong>sabotieren</strong>.</p><p>Gesetzeshüter <strong>können nur erfüllen</strong>. Gesetzlose haben die Wahl: Sabotage hilft ihrem Team, weckt aber Verdacht.</p></div><div class="passo"><div class="num"><span>4</span></div><h3>Das Ergebnis wird zum Chip</h3><p>Die Missionsstimmen werden gemeinsam aufgedeckt, ohne zu verraten, von wem sie stammen. <strong>Eine einzige Sabotage</strong> lässt die Mission scheitern, und der Chip wird rot.</p></div></div>
                     <div class="alerta"><span class="bang">!</span><span><strong>5 abgelehnte Teams in Folge</strong> = die Stadt bricht zusammen. Sofortiger Sieg der Gesetzlosen. Lasst die Abstimmung nicht stocken!</span></div>
                     <div class="nota">An großen Tischen brauchen manche Missionen <strong>2 Sabotagen</strong>, um zu scheitern. Der Chip zeigt dann „2 Sabotagen“.</div>
                 </div>`,
